@@ -13,6 +13,7 @@ public:
 signals:
 
 public slots:
+    void openMail();
     void connectBase();
     void tst();
 private:
@@ -22,6 +23,7 @@ private:
     QLayout *l;
     QMenu *menu;
     QAction *openBase;
+    QAction *openMailFolder;
     QPushButton *btn;
     QTableWidget *tab;
 };

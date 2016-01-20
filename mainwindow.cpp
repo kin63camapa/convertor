@@ -1,20 +1,35 @@
 #include "mainwindow.h"
 #include "sqlconnectdialog.h"
 
+QStringList loadFiles(QDir startDir, QStringList filters)
+{
+
+    QStringList list;
+
+    foreach (QString file, startDir.entryList(filters, QDir::Files))
+        list += QFileInfo(startDir.absolutePath() + QDir::separator() + file).absoluteFilePath();
+
+    foreach (QString subdir, startDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot))
+        list += loadFiles(QDir(startDir.absolutePath() + QDir::separator() + subdir), filters);
+    return list;
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QDialog(parent)
 {
 
     tab = new QTableWidget(this);
     statusbar = new QStatusBar(this);
-
+    openMailFolder = new QAction(QString::fromUtf8("Открыть Почту"),this);
     menubar = new QMenuBar(this);
     menu = new QMenu(menubar);
     openBase = new QAction(QString::fromUtf8("Открыть Базу"),this);
     menu->setTitle("File");
     menu->addAction(openBase);
+    menu->addAction(openMailFolder);
     menubar->addMenu(menu);
     connect(openBase,SIGNAL(triggered()),this,SLOT(connectBase()));
+    connect(openMailFolder,SIGNAL(triggered()),this,SLOT(openMail()));
     btn = new QPushButton(this);
     connect(btn,SIGNAL(clicked()),this,SLOT(tst()));
     l = new QVBoxLayout(this);
@@ -23,7 +38,16 @@ MainWindow::MainWindow(QWidget *parent) :
     l->addWidget(tab);
     l->addWidget(btn);
     l->addWidget(statusbar);
-    connectBase();
+    //connectBase();
+
+}
+
+void MainWindow::openMail()
+{
+    QStringList a;
+    a.push_back("*.xml");
+    qDebug() << loadFiles(QDir(QFileDialog::getExistingDirectory(this)),a);
+
 }
 
 void MainWindow::connectBase()
@@ -38,8 +62,7 @@ void MainWindow::connectBase()
 
 void MainWindow::tst()
 {
-
-    QSqlQuery q("select title,first_name from otrs.users where login like \"natuko\" order by id;",db);
+    QSqlQuery q("select login,customer_id from otrs.customer_user where email like \"holod@oootxt.ru\" order by id;",db);
     //QSqlQuery q("select * from otrs.users;",db);
     q.last();
     tab->setRowCount(q.at()+1);
