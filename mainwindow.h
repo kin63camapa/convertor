@@ -23,6 +23,7 @@ private:
     QMenu *menu;
     QAction *openBase;
     QPushButton *btn;
+    QTableWidget *tab;
 };
 
 #endif // MAINWINDOW_H
