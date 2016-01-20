@@ -36,7 +36,4 @@ void MainWindow::tst()
 {
     db.exec("select * from otrs.users;");
     statusbar->showMessage(db.lastError().text());
-    btn->setText(db.);
-
-
 }
