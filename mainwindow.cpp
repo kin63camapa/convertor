@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "sqlconnectdialog.h"
 
+#include <QtXml>
+
 QStringList loadFiles(QDir startDir, QStringList filters)
 {
 
@@ -46,8 +48,11 @@ void MainWindow::openMail()
 {
     QStringList a;
     a.push_back("*.xml");
-    qDebug() << loadFiles(QDir(QFileDialog::getExistingDirectory(this)),a);
-
+    foreach (QString str, loadFiles(QDir(QFileDialog::getExistingDirectory(this)),a))
+    {
+        QFile file(str);
+        file.open(QIODevice::ReadOnly);
+    }
 }
 
 void MainWindow::connectBase()
