@@ -51,7 +51,8 @@ void MainWindow::openMail()
     foreach (QString str, loadFiles(QDir(QFileDialog::getExistingDirectory(this)),a))
     {
         QFile file(str);
-        file.open(QIODevice::ReadOnly);
+        file.open(QIODevice::ReadOnly); //Открываем файл.
+
     }
 }
 
