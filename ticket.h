@@ -8,11 +8,6 @@ class TICKET : public QObject
     Q_OBJECT
 public:
     explicit TICKET(QObject *parent = 0);
-signals:
-
-public slots:
-
-private:
     int ID;
     int ticket_number;
     QDateTime time;
@@ -21,6 +16,13 @@ private:
     QString email;
     QString customer_user_id;
     QString customer_id;
+    bool isNew;
+signals:
+
+public slots:
+
+private:
+
 };
 
 #endif // TICKET_H

@@ -45,35 +45,65 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::openMail()
 {
-    /* QStringList a;
-    a.push_back("*.*");
-    QString str, QDir(QFileDialog::getExistingDirectory(this)),a;
-    {
-        QFile file(str);
-        file.open(QIODevice::ReadOnly); //Открываем файл.
-        QList<TICKET> list;
 
-
-
-    }
-    */
     QFile *file = new QFile(QFileDialog::getOpenFileName(this));
     if (!file->open(QIODevice::ReadOnly)) {
         QMessageBox(QMessageBox::Warning,QString::fromUtf8("Апшипка"),QString::fromUtf8("Не удалось открыть файл: %1").arg(file->fileName())).exec();
     }
     else
-    {
-        while(!file->atEnd()){
-            QString str = file->readLine();
-            if(str.contains(QRegExp("From \\d*@xxx ")))
-                qDebug() << str;
+    {//открыли файл
+        QList<TICKET> list;
+        TICKET tmpTicket;
+        QString tmp = file->readLine();
+        while(!file->atEnd())//похоже не отрабатывает
+        {//пока файл не кончится
+            do
+            {//внутри цикла 1 письмо
+                if (tmp.contains(QRegExp("^From \\d*@xxx ")))
+                {//первая строка мыла, забираем дату+время
+
+                    //QLocale loc(QLocale::English);
+                    //tmpTicket.time =  loc.toDateTime(tmp.remove(QRegExp("From \\d*@xxx ")).remove(tmp.size()-2,2).replace(" +0000 "," "));
+                    //qDebug() << qPrintable(tmp.remove(QRegExp("From \\d*@xxx ")).remove(tmp.size()-2,2).replace(" +0000 "," "));
+                    QString sT = tmp;
+                    tmpTicket.time.setTime(QTime::fromString(sT.remove(QRegExp("From \\d*@xxx ... ... .. ")).remove(8,13)));
+                    sT = tmp;
+                    int mm;
+                    sT=sT.remove(QRegExp("From \\d*@xxx ... ")).remove(3,25);
+                    if (sT=="Jan") mm=1;
+                    if (sT=="Feb") mm=2;
+                    if (sT=="Mar") mm=3;
+                    if (sT=="Apr") mm=4;
+                    if (sT=="May") mm=5;
+                    if (sT=="June") mm=6;
+                    if (sT=="Jun") mm=6;
+                    if (sT=="July") mm=7;
+                    if (sT=="Jul") mm=7;
+                    if (sT=="Aug") mm=8;
+                    if (sT=="Sep") mm=9;
+                    if (sT=="Oct") mm=10;
+                    if (sT=="Nov") mm=11;
+                    if (sT=="Dec") mm=12;
+                    sT = tmp;
+                    int yy=sT.remove(QRegExp("From \\d*@xxx ... ... ")).remove(1,18).toInt();
+                    sT = tmp;
+                    int dd=sT.remove(QRegExp("From \\d*@xxx ... ... ")).remove(2,21).toInt();
+                    tmpTicket.time.setDate(QDate(yy,mm,dd));
 
 
-            //if (str.contains(""))
+                    qDebug() << tmpTicket.time;
+                }
+                if (tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
+                {//заявка новая
+                    tmpTicket.isNew=true;
+                    tmpTicket.theme=QString::fromUtf8(tmp.remove(tmp.size()-3,3).toAscii()).remove(0,29);
+                    qDebug() << tmpTicket.theme;
+                }
+                tmp = file->readLine();
+            }while(!tmp.contains(QRegExp("From \\d*@xxx ")));
+            //qDebug() << tmp;
         }
     }
-
-
 }
 
 void MainWindow::connectBase()
