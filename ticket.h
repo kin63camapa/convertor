@@ -9,14 +9,14 @@ class TICKET : public QObject
 public:
     explicit TICKET(QObject *parent = 0);
     int ID;
-    int ticket_number;
-    QDateTime time;
+    int ticket_number;//
+    QDateTime time;//
     QString theme;
     QString text;
     QString email;
     QString customer_user_id;
     QString customer_id;
-    bool isNew;
+    bool isNew;//
 signals:
 
 public slots:

@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "sqlconnectdialog.h"
 #include "ticket.h"
 
@@ -63,8 +63,10 @@ void MainWindow::openMail()
                 {//первая строка мыла, забираем дату+время
 
                     //QLocale loc(QLocale::English);
-                    //tmpTicket.time =  loc.toDateTime(tmp.remove(QRegExp("From \\d*@xxx ")).remove(tmp.size()-2,2).replace(" +0000 "," "));
+                    //tmpTicket.time = loc.toDateTime(tmp.remove(QRegExp("From \\d*@xxx ")).remove(tmp.size()-2,2).replace(" +0000 "," "));
+                    //по идее этого достаточно но цука не пашет!!!!!! по этому дальше быдлокот
                     //qDebug() << qPrintable(tmp.remove(QRegExp("From \\d*@xxx ")).remove(tmp.size()-2,2).replace(" +0000 "," "));
+
                     QString sT = tmp;
                     tmpTicket.time.setTime(QTime::fromString(sT.remove(QRegExp("From \\d*@xxx ... ... .. ")).remove(8,13)));
                     sT = tmp;
@@ -89,9 +91,19 @@ void MainWindow::openMail()
                     sT = tmp;
                     int dd=sT.remove(QRegExp("From \\d*@xxx ... ... ")).remove(2,21).toInt();
                     tmpTicket.time.setDate(QDate(yy,mm,dd));
-
-
                     qDebug() << tmpTicket.time;
+                }
+                if (tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\] \\[\\d*\\]")))
+                {
+                    tmpTicket.ticket_number=tmp.remove(QRegExp("Subject: \\[Ticket#")).remove(6,12).toInt();
+                    qDebug() << "#" << tmpTicket.ticket_number;
+                }
+                if (tmp.contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"))
+                {
+                    tmp = file->readLine();
+                    tmp.resize(tmp.size()-2);
+                    tmpTicket.ID = tmp.remove(0,3).toInt();
+                    qDebug() << "ID" << tmpTicket.ID;
                 }
                 if (tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
                 {//заявка новая
