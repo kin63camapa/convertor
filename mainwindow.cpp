@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "sqlconnectdialog.h"
-
-#include <QtXml>
+#include "ticket.h"
 
 QStringList loadFiles(QDir startDir, QStringList filters)
 {
@@ -46,14 +45,35 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::openMail()
 {
-    QStringList a;
-    a.push_back("*.xml");
-    foreach (QString str, loadFiles(QDir(QFileDialog::getExistingDirectory(this)),a))
+    /* QStringList a;
+    a.push_back("*.*");
+    QString str, QDir(QFileDialog::getExistingDirectory(this)),a;
     {
         QFile file(str);
         file.open(QIODevice::ReadOnly); //Открываем файл.
+        QList<TICKET> list;
+
+
 
     }
+    */
+    QFile *file = new QFile(QFileDialog::getOpenFileName(this));
+    if (!file->open(QIODevice::ReadOnly)) {
+        QMessageBox(QMessageBox::Warning,QString::fromUtf8("Апшипка"),QString::fromUtf8("Не удалось открыть файл: %1").arg(file->fileName())).exec();
+    }
+    else
+    {
+        while(!file->atEnd()){
+            QString str = file->readLine();
+            if(str.contains(QRegExp("From [0-9]@xxx")))
+                qDebug() << str;
+
+
+            //if (str.contains(""))
+        }
+    }
+
+
 }
 
 void MainWindow::connectBase()

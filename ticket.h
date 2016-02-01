@@ -14,6 +14,7 @@ public slots:
 
 private:
     int ID;
+    int ticket_number;
     QDateTime time;
     QString theme;
     QString text;
