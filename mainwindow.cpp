@@ -65,7 +65,7 @@ void MainWindow::openMail()
     {
         while(!file->atEnd()){
             QString str = file->readLine();
-            if(str.contains(QRegExp("From [0-9]@xxx")))
+            if(str.contains(QRegExp("From \\d*@xxx ")))
                 qDebug() << str;
 
 
