@@ -8,7 +8,8 @@ class TICKET : public QObject
     Q_OBJECT
 public:
     explicit TICKET(QObject *parent = 0);
-    int ID;
+    void clear();
+    int ID;//
     int ticket_number;//
     QDateTime time;//
     QString theme;

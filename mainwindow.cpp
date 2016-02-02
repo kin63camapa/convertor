@@ -52,14 +52,23 @@ void MainWindow::openMail()
     }
     else
     {//открыли файл
-        QList<TICKET> list;
+        //QList<TICKET> list;
+        bool id=false;
+        bool num=false;
+        bool time=false;
+        bool theme=false;
+        bool text=false;
+        bool email=false;
+        bool customer_user_id=false;
+        bool customer_id=false;
+        bool isNew=false;
         TICKET tmpTicket;
         QString tmp = file->readLine();
-        while(!file->atEnd())//похоже не отрабатывает
+        while(file->bytesAvailable())
         {//пока файл не кончится
             do
             {//внутри цикла 1 письмо
-                if (tmp.contains(QRegExp("^From \\d*@xxx ")))
+                if (!time && tmp.contains(QRegExp("^From \\d*@xxx ")))
                 {//первая строка мыла, забираем дату+время
 
                     //QLocale loc(QLocale::English);
@@ -91,29 +100,42 @@ void MainWindow::openMail()
                     sT = tmp;
                     int dd=sT.remove(QRegExp("From \\d*@xxx ... ... ")).remove(2,21).toInt();
                     tmpTicket.time.setDate(QDate(yy,mm,dd));
-                    qDebug() << tmpTicket.time;
+                    time=tmpTicket.time.isValid();
+                    if (time) time=!tmpTicket.time.isNull();
                 }
-                if (tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\] \\[\\d*\\]")))
-                {
-                    tmpTicket.ticket_number=tmp.remove(QRegExp("Subject: \\[Ticket#")).remove(6,12).toInt();
-                    qDebug() << "#" << tmpTicket.ticket_number;
+                if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\] \\[\\d*\\]")))
+                {//получаем номер
+                    num=tmpTicket.ticket_number=tmp.remove(QRegExp("Subject: \\[Ticket#")).remove(6,12).toInt();
                 }
-                if (tmp.contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"))
-                {
+                if (!id&&tmp.contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"))
+                {//получаем id старой базы
                     tmp = file->readLine();
                     tmp.resize(tmp.size()-2);
-                    tmpTicket.ID = tmp.remove(0,3).toInt();
-                    qDebug() << "ID" << tmpTicket.ID;
+                    id=tmpTicket.ID=tmp.remove(0,3).toInt();
                 }
-                if (tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
+                if (!tmpTicket.isNew && tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
                 {//заявка новая
                     tmpTicket.isNew=true;
                     tmpTicket.theme=QString::fromUtf8(tmp.remove(tmp.size()-3,3).toAscii()).remove(0,29);
-                    qDebug() << tmpTicket.theme;
+                    //тут надо получить мыло, и, по возможности, customer_id и customer_user_id
                 }
                 tmp = file->readLine();
-            }while(!tmp.contains(QRegExp("From \\d*@xxx ")));
-            //qDebug() << tmp;
+            }while(file->bytesAvailable()&&!tmp.contains(QRegExp("From \\d*@xxx ")));
+            //тут тикет по результатам чтения письма
+            qDebug() << tmpTicket.ID << tmpTicket.ticket_number << tmpTicket.time.toString("dd.MM.yyyy hh:mm:ss") << tmpTicket.theme;
+
+
+            //прибераемся
+            tmpTicket.clear();
+            id=false;
+            num=false;
+            time=false;
+            theme=false;
+            text=false;
+            email=false;
+            customer_user_id=false;
+            customer_id=false;
+            isNew=false;
         }
     }
 }
