@@ -6,6 +6,11 @@ TICKET::TICKET(QObject *parent) :
     clear();
 }
 
+bool TICKET::operator ==(int ticket_number)
+{
+    return this->ticket_number == ticket_number;
+}
+
 void TICKET::clear()
 {
     ID = 0;

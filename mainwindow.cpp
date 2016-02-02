@@ -52,7 +52,7 @@ void MainWindow::openMail()
     }
     else
     {//открыли файл
-        //QList<TICKET> list;
+        QList<TICKET> list;
         bool id=false;
         bool num=false;
         bool time=false;
@@ -62,6 +62,8 @@ void MainWindow::openMail()
         bool customer_user_id=false;
         bool customer_id=false;
         bool isNew=false;
+        bool htmlIsPresent=false;
+        bool plainIsPresent=false;
         TICKET tmpTicket;
         QString tmp = file->readLine();
         while(file->bytesAvailable())
@@ -78,6 +80,7 @@ void MainWindow::openMail()
 
                     QString sT = tmp;
                     tmpTicket.time.setTime(QTime::fromString(sT.remove(QRegExp("From \\d*@xxx ... ... .. ")).remove(8,13)));
+                    //индус думает что длинна месяца всегда 3 символа
                     sT = tmp;
                     int mm;
                     sT=sT.remove(QRegExp("From \\d*@xxx ... ")).remove(3,25);
@@ -86,9 +89,9 @@ void MainWindow::openMail()
                     if (sT=="Mar") mm=3;
                     if (sT=="Apr") mm=4;
                     if (sT=="May") mm=5;
-                    if (sT=="June") mm=6;
+                    if (sT=="June") mm=6;//или 4
                     if (sT=="Jun") mm=6;
-                    if (sT=="July") mm=7;
+                    if (sT=="July") mm=7;//но не как не пять
                     if (sT=="Jul") mm=7;
                     if (sT=="Aug") mm=8;
                     if (sT=="Sep") mm=9;
@@ -98,6 +101,7 @@ void MainWindow::openMail()
                     sT = tmp;
                     int yy=sT.remove(QRegExp("From \\d*@xxx ... ... ")).remove(1,18).toInt();
                     sT = tmp;
+                    //а тут снова 3
                     int dd=sT.remove(QRegExp("From \\d*@xxx ... ... ")).remove(2,21).toInt();
                     tmpTicket.time.setDate(QDate(yy,mm,dd));
                     time=tmpTicket.time.isValid();
@@ -105,7 +109,7 @@ void MainWindow::openMail()
                 }
                 if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\] \\[\\d*\\]")))
                 {//получаем номер
-                    num=tmpTicket.ticket_number=tmp.remove(QRegExp("Subject: \\[Ticket#")).remove(6,12).toInt();
+                    num=tmpTicket.ticket_number=tmp.remove(QRegExp("Subject: \\[Ticket#")).remove(6,12).toInt();//индус думает что длинна номера всегда 6 символов
                 }
                 if (!id&&tmp.contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"))
                 {//получаем id старой базы
@@ -113,17 +117,31 @@ void MainWindow::openMail()
                     tmp.resize(tmp.size()-2);
                     id=tmpTicket.ID=tmp.remove(0,3).toInt();
                 }
-                if (!tmpTicket.isNew && tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
+                if (!theme && !tmpTicket.isNew && tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
                 {//заявка новая
                     tmpTicket.isNew=true;
                     tmpTicket.theme=QString::fromUtf8(tmp.remove(tmp.size()-3,3).toAscii()).remove(0,29);
+                    theme=tmpTicket.theme.size();
                     //тут надо получить мыло, и, по возможности, customer_id и customer_user_id
                 }
+
+                if (!plainIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
+                {
+                    plainIsPresent=true;
+                }
+
+
+
                 tmp = file->readLine();
             }while(file->bytesAvailable()&&!tmp.contains(QRegExp("From \\d*@xxx ")));
             //тут тикет по результатам чтения письма
             qDebug() << tmpTicket.ID << tmpTicket.ticket_number << tmpTicket.time.toString("dd.MM.yyyy hh:mm:ss") << tmpTicket.theme;
 
+            if (!list.contains(tmpTicket.ticket_number)) list.append(tmpTicket);
+            else
+            {
+                if (list.at(list.count(tmpTicket.ticket_number)).isNew);
+            }
 
             //прибераемся
             tmpTicket.clear();
