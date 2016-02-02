@@ -1,14 +1,45 @@
 #include "ticket.h"
 
-TICKET::TICKET(QObject *parent) :
-    QObject(parent)
+//TICKET::TICKET(QObject *parent) :
+//    QObject(parent)
+//{
+//    clear();
+//}
+
+TICKET::TICKET()
 {
     clear();
 }
 
-bool TICKET::operator ==(int ticket_number)
+TICKET::TICKET(const TICKET &other)
 {
-    return this->ticket_number == ticket_number;
+    ID = other.ID;
+    ticket_number = other.ticket_number;
+    isNew = other.isNew;
+    time=other.time;
+    theme=other.theme;
+    text=other.theme;
+    email=other.email;
+    customer_user_id=other.customer_user_id;
+    customer_id=other.customer_user_id;
+}
+
+TICKET &TICKET::operator=(const TICKET &other)
+{
+    ID = other.ID;
+    ticket_number = other.ticket_number;
+    isNew = other.isNew;
+    time=other.time;
+    theme=other.theme;
+    text=other.theme;
+    email=other.email;
+    customer_user_id=other.customer_user_id;
+    customer_id=other.customer_user_id;
+}
+
+bool TICKET::operator==(const TICKET& o) const
+{
+    return this->ticket_number == o.ticket_number;
 }
 
 void TICKET::clear()

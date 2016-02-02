@@ -7,8 +7,11 @@ class TICKET : public QObject
 {
     Q_OBJECT
 public:
-    explicit TICKET(QObject *parent = 0);
-    bool operator ==(int ticket_number);
+    //explicit TICKET(QObject *parent = 0);
+    TICKET();               // конструктор по умолчанию
+    TICKET(const TICKET &other);  // конструктор копирования
+    TICKET &operator=(const TICKET &other);  // оператор присваивания
+    bool operator==(const TICKET& o)const;
     void clear();
     int ID;//
     int ticket_number;//
