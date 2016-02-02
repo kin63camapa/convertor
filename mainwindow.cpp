@@ -104,18 +104,37 @@ void MainWindow::openMail()
                     tmpTicket.theme=QString::fromUtf8(tmp.remove(tmp.size()-3,3).toAscii()).remove(0,29);
                     theme=tmpTicket.theme.size();
                     //тут надо получить мыло, и, по возможности, customer_id и customer_user_id
+                    QStringList buff;
+                    do
+                    {
+                        buff.append(file->readLine());
+                    }
+                    while (!buff.at(buff.size()-1).contains("сообщает:")||buff.size()==10);
+
+                    QString str=
+                            buff.at(buff.size()-4)
+                            +buff.at(buff.size()-3)
+                            +buff.at(buff.size()-2)
+                            +buff.at(buff.size()-1);
+
+                    qDebug() << QString::fromUtf8(str.remove(QRegExp("[\\n\\t\\r]")).toAscii());
                 }
 
                 if (!plainIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
                 {
                     plainIsPresent=true;
                 }
-
+                if (!htmlIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
+                {
+                    htmlIsPresent=true;
+                }
+                if (htmlIsPresent!=plainIsPresent) QMessageBox(QMessageBox::Warning,QString::fromUtf8("Апшипка"),QString::fromUtf8("coder is invalid")).exec();
 
 
                 tmp = file->readLine();
             }while(file->bytesAvailable()&&!tmp.contains(QRegExp("From \\d*@xxx ")));
             //тут тикет по результатам чтения письма
+
             if (!list.contains(tmpTicket))
             {
                 //qDebug() << "add new ticket" << tmpTicket.ticket_number;
@@ -123,11 +142,11 @@ void MainWindow::openMail()
             }
             else
             {
-                if (list.at(list.indexOf(tmpTicket)).time>tmpTicket.time)
+                if (list.at(list.indexOf(tmpTicket)).time>tmpTicket.time);
                 //qDebug() << "find additional for" << list.at(list.indexOf(tmpTicket)).ticket_number;
 
-                if (list.at(list.indexOf(tmpTicket)).ticket_number!=tmpTicket.ticket_number)
-                      QMessageBox(QMessageBox::Warning,QString::fromUtf8("Апшипка"),QString::fromUtf8("coder is invalid")).exec();
+                if (list.at(list.indexOf(tmpTicket)).ticket_number!=tmpTicket.ticket_number);
+
             }
             //прибераемся
             tmpTicket.clear();
@@ -140,6 +159,8 @@ void MainWindow::openMail()
             customer_user_id=false;
             customer_id=false;
             isNew=false;
+            htmlIsPresent=false;
+            plainIsPresent=false;
         }
         foreach (TICKET t, list)
         {
