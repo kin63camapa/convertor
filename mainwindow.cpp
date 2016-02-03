@@ -118,9 +118,10 @@ void MainWindow::openMail()
                             +buff.at(buff.size()-1);
 
                     str.remove(QRegExp("[\\n\\t\\r]"));
-                    str.remove(QRegExp("([А-я].*\"\ ?<)")); // Чистим строку до символа '<'
-                    //qDebug() << QString::fromUtf8(str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z]))")).toAscii());  Должен удалять Non-breaking space, ключ - должен
-                    qDebug() << QString::fromUtf8(str.remove(QRegExp("([А-я].*\ (?=[A-z]))")).toAscii()); //
+                    str.remove(QRegExp("([А-я].*\"\ ?<)")); // Чистим строку до символа '<' Также чукча не знает, есть ли ветвление в регулярках отсюда нижняя строка
+                    qDebug() << QString::fromUtf8(str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z]))")).toAscii()); /* Должен удалять Non-breaking space(или U+00A0)
+                    //чего не делает, соответственно остаётся около 10 нераспиленных мыл.Одно из опорных - 1@mail.ru некоего Дмитрия Бочкарева. Глянь вывод, может
+                    возникнет идея получше)*/
                 }
 
                 if (!plainIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
