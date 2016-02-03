@@ -117,7 +117,10 @@ void MainWindow::openMail()
                             +buff.at(buff.size()-2)
                             +buff.at(buff.size()-1);
 
-                    qDebug() << QString::fromUtf8(str.remove(QRegExp("[\\n\\t\\r]")).toAscii());
+                    str.remove(QRegExp("[\\n\\t\\r]"));
+                    str.remove(QRegExp("([А-я].*\"\ ?<)")); // Чистим строку до символа '<'
+                    //qDebug() << QString::fromUtf8(str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z]))")).toAscii());  Должен удалять Non-breaking space, ключ - должен
+                    qDebug() << QString::fromUtf8(str.remove(QRegExp("([А-я].*\ (?=[A-z]))")).toAscii()); //
                 }
 
                 if (!plainIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
