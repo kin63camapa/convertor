@@ -1,4 +1,4 @@
-#include <QSqlQuery>
+﻿#include <QSqlQuery>
 #include "parser.h"
 
 Parser::Parser(QObject *parent) :
@@ -39,11 +39,11 @@ void Parser::run()
             if (!time && tmp.contains(QRegExp("^From \\d*@xxx ")))
             {//первая строка мыла, забираем дату+время
                 QLocale loc(QLocale::English);
-                tmpTicket.time = loc.toDateTime(
+                tmpTicket.creationTime = loc.toDateTime(
                             tmp.remove(QRegExp("From \\d*@xxx ")).remove(30,100).replace(" +0000 "," "),"ddd MMM dd hh:mm:ss yyyy");
-                tmpTicket.time=QDateTime::fromTime_t(tmpTicket.time.toTime_t()+60*60*4);
-                time=tmpTicket.time.isValid();
-                if (time) time=!tmpTicket.time.isNull();
+                tmpTicket.creationTime=QDateTime::fromTime_t(tmpTicket.creationTime.toTime_t()+60*60*4);
+                time=tmpTicket.creationTime.isValid();
+                if (time) time=!tmpTicket.creationTime.isNull();
             }
             //if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\] \\[\\d*\\]")))
             if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\]")))
@@ -57,100 +57,96 @@ void Parser::run()
                     num=tmpTicket.ticket_number=tmp1.toInt();
                 }
             }
-            if (!id&&tmp.contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"))
-            {//получаем id старой базы
-                tmp = file->readLine();
-                emit progress(file->bytesAvailable());
-                tmp.resize(tmp.size()-2);
-                id=tmpTicket.ID=tmp.remove(0,3).toInt();
-            }
-            if (!theme && !tmpTicket.isNew && tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
-            {//заявка новая
-                tmpTicket.isNew=true;
-                tmpTicket.theme=QString::fromUtf8(tmp.remove(tmp.size()-3,3).toAscii()).remove(0,29);
-                theme=tmpTicket.theme.size();
-                //тут надо получить мыло, и, по возможности, customer_id и customer_user_id
-                QStringList buff;
-                do
-                {
-                    buff.append(file->readLine());
-                    emit progress(file->bytesAvailable());
-                }
-                while (!buff.at(buff.size()-1).contains("сообщает:")||buff.size()==10);
-
-                QString str=
-                        buff.at(buff.size()-4)
-                        +buff.at(buff.size()-3)
-                        +buff.at(buff.size()-2)
-                        +buff.at(buff.size()-1);
-
-                str.remove(QRegExp("[\\n\\t\\r]"));
-                str.remove(QRegExp("([А-я0-9!\"].*\"\ ?<)"));
-                // Чистим строку до символа '<' Также чукча не знает, есть ли ветвление в регулярках отсюда нижняя строка
-                str.remove(QRegExp("([А-я!].*\\x00A0(?=[0-9A-z]))"));
-                str.remove(">, сообщает:");
-                str.remove(">,сообщает:");
-                str.remove(", сообщает:");
-                str.remove(",сообщает:");
-                tmpTicket.email=str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z0-9]))"));
-                // Должен удалять Non-breaking space(или U+00A0)
-                Userinfo nfo = getFromEmail(tmpTicket.email);
-                if (nfo.isOk)
-                {
-                    tmpTicket.customer_id = nfo.customer_id;
-                    tmpTicket.customer_user_id = nfo.customer_user_id;
-                    qDebug() << tmpTicket.email << tmpTicket.customer_user_id << tmpTicket.customer_id;
-                }
-                else
-                {
-                    if (!unknowEmails->contains(tmpTicket.email))unknowEmails->append(tmpTicket.email);
-                    //qDebug() << "can not find user or conpany by emails " << tmpTicket.email;
-                }
-            }
-            if (!text && tmp.contains(QRegExp("<snip>")))
+            if (!text && tmp.contains(QRegExp("Content-Type: text/plain; charset\"utf-8\"")))
             {
                 QStringList bufftx;
                 do
                 {
+                    tmp=file->readLine();
+                    emit progress(file->bytesAvailable());
+                    if (!theme && !tmpTicket.isNew && tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
+                    {//заявка новая
+                        tmpTicket.isNew=true;
+                        tmpTicket.theme=QString::fromUtf8(tmp.remove(tmp.size()-3,3).toAscii()).remove(0,29);
+                        theme=tmpTicket.theme.size();
+                        QStringList buff;
+                        do
+                        {
+                            buff.append(file->readLine());
+                            emit progress(file->bytesAvailable());
+                        }
+                        while (!buff.at(buff.size()-1).contains("сообщает:")||buff.size()==10);
 
-                    bufftx.append(file->readLine());
+                        QString str=
+                                buff.at(buff.size()-4)
+                                +buff.at(buff.size()-3)
+                                +buff.at(buff.size()-2)
+                                +buff.at(buff.size()-1);
+
+                        str.remove(QRegExp("[\\n\\t\\r]"));
+                        str.remove(QRegExp("([А-я0-9!\"].*\"\ ?<)"));
+                        // Чистим строку до символа '<' Также чукча не знает, есть ли ветвление в регулярках отсюда нижняя строка
+                        str.remove(QRegExp("([А-я!].*\\x00A0(?=[0-9A-z]))"));
+                        str.remove(">, сообщает:");
+                        str.remove(">,сообщает:");
+                        str.remove(", сообщает:");
+                        str.remove(",сообщает:");
+                        tmpTicket.email=str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z0-9]))"));
+                        // Должен удалять Non-breaking space(или U+00A0)
+                        Userinfo nfo = getFromEmail(tmpTicket.email);
+                        if (nfo.isOk)
+                        {
+                            tmpTicket.customer_id = nfo.customer_id;
+                            tmpTicket.customer_user_id = nfo.customer_user_id;
+                            //qDebug() << tmpTicket.email << tmpTicket.customer_user_id << tmpTicket.customer_id;
+                        }
+                        else
+                        {
+                            if (!unknowEmails->contains(tmpTicket.email))unknowEmails->append(tmpTicket.email);
+                            //qDebug() << "can not find user or conpany by emails " << tmpTicket.email;
+                        }
+
+                    }
+                    bufftx.append(tmp);
                 }
-                while(!bufftx.at(bufftx.size()-1).contains(QRegExp("<snip>")));
-                QString strtx;
-                strtx = bufftx.at(bufftx.size()-4)+
-                        bufftx.at(bufftx.size()-3)+
-                        bufftx.at(bufftx.size()-2)+
-                        bufftx.at(bufftx.size()-1);
-                qDebug() << QString::fromUtf8(strtx.toAscii());
+                while(!bufftx.at(bufftx.size()-1).contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"));
+                if (!id)
+                {//получаем id старой базы
+                    tmp = file->readLine();
+                    emit progress(file->bytesAvailable());
+                    tmp.resize(tmp.size()-2);
+                    id=tmpTicket.ID=tmp.remove(0,3).toInt();
+                }
+                foreach (QString tmptx, bufftx)
+                {
+                    if (
+                            tmptx.contains("Content-Disposition:")||
+                            tmptx.contains("Content-Transfer-Encoding:")||
+                            tmptx.contains("[1]http://otrs.smart-tech.biz"
+                                           ))continue;
+                    tmp += tmptx;
+                }
+                tmpTicket.text=tmp;
+                text=tmp.size();
+                //qDebug() << QString::fromUtf8(tmp.toAscii());
             }
-
-            if (!plainIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
-            {
-                plainIsPresent=true;
-            }
-            if (!htmlIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
-            {
-                htmlIsPresent=true;
-            }
-            //if (htmlIsPresent!=plainIsPresent) QMessageBox(QMessageBox::Warning,QString::fromUtf8("Апшипка"),QString::fromUtf8("coder is invalid")).exec();
-
-
             tmp = file->readLine();
+            emit progress(file->bytesAvailable());
         }while(file->bytesAvailable()&&!tmp.contains(QRegExp("From \\d*@xxx ")));
         //тут тикет по результатам чтения письма
-
-        if (!list.contains(tmpTicket))
+        TICKET::message m;
+        m.time=tmpTicket.creationTime;
+        m.text=tmpTicket.text;
+        tmpTicket.messages.append(m);
+        if (list.contains(tmpTicket))
         {
-            //qDebug() << "add new ticket" << tmpTicket.ticket_number;
+            tmpTicket.compare(list.at(list.indexOf(tmpTicket)));
+            list.removeAt(list.indexOf(tmpTicket));
             list.append(tmpTicket);
         }
         else
         {
-            if (list.at(list.indexOf(tmpTicket)).time>tmpTicket.time);
-            //qDebug() << "find additional for" << list.at(list.indexOf(tmpTicket)).ticket_number;
-
-            if (list.at(list.indexOf(tmpTicket)).ticket_number!=tmpTicket.ticket_number);
-
+            list.append(tmpTicket);
         }
         //прибераемся
         tmpTicket.clear();
@@ -170,7 +166,11 @@ void Parser::run()
     qDebug() << *unknowEmails;
     foreach (TICKET t, list)
     {
-        //qDebug() << t.ID << t.ticket_number << t.time.toString("dd.MM.yyyy hh:mm:ss") << t.theme;
+        qDebug() << t.ID << t.ticket_number << t.creationTime.toString("dd.MM.yyyy hh:mm:ss") << t.theme << t.email<<t.customer_user_id<<t.customer_id;
+        foreach (TICKET::message m, t.messages)
+        {
+            //qDebug() << m.time.toString("dd.MM.yyyy hh:mm:ss") << QString::fromUtf8(m.text.toAscii());
+        }
 
     }
 }

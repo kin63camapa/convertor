@@ -2,12 +2,13 @@
 #include "sqlconnectdialog.h"
 #include "ticket.h"
 
+
 MainWindow::MainWindow(QWidget *parent) :
     QDialog(parent)
 {
     parser = new Parser(this);
     unknowEmails = new QStringList();
-    tab = new QTableWidget(this);
+    tab = new TicketPreview(this);
     statusbar = new QStatusBar(this);
     openMailFolder = new QAction(QString::fromUtf8("Открыть Почту"),this);
     menubar = new QMenuBar(this);
@@ -29,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     l->setContentsMargins(0,0,0,0);
     l->addWidget(menubar);
     l->addWidget(tab);
+    tab->hide();
     l->addWidget(pbar);
     l->addWidget(btn);
     l->addWidget(statusbar);
@@ -102,6 +104,7 @@ void MainWindow::doAllZBS()
            break;
        case QMessageBox::Discard:
            // manual
+        tab->show();
            break;
        case QMessageBox::Cancel:
        default:

@@ -4,6 +4,7 @@
 #include <QtGui>
 #include <QSqlDatabase>
 #include "parser.h"
+#include "ticketpreview.h"
 
 class MainWindow : public QDialog
 {
@@ -25,7 +26,7 @@ private:
     QAction *openBase;
     QAction *openMailFolder;
     QPushButton *btn;
-    QTableWidget *tab;
+    TicketPreview *tab;
     QStringList *unknowEmails;
     Parser *parser;
 };

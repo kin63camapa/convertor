@@ -16,13 +16,16 @@ SOURCES += main.cpp \
     ticket.cpp \
     sqlconnectdialog.cpp \
     mainwindow.cpp \
-    parser.cpp
+    parser.cpp \
+    ticketpreview.cpp
 
 HEADERS  += \
     ticket.h \
     sqlconnectdialog.h \
     mainwindow.h \
-    parser.h
+    parser.h \
+    ticketpreview.h
 
 FORMS += \
-    sqlconnectdialog.ui
+    sqlconnectdialog.ui \
+    ticketpreview.ui
