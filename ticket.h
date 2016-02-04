@@ -3,6 +3,13 @@
 
 #include <QtCore>
 
+struct Userinfo
+{
+    bool isOk;
+    QString customer_user_id;
+    QString customer_id;
+};
+
 class TICKET : public QObject
 {
     Q_OBJECT
@@ -32,4 +39,5 @@ private:
 
 };
 
+extern QList<TICKET> list;
 #endif // TICKET_H

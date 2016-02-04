@@ -1,5 +1,7 @@
 #include "ticket.h"
 
+QList<TICKET> list;
+
 //TICKET::TICKET(QObject *parent) :
 //    QObject(parent)
 //{
@@ -37,7 +39,7 @@ TICKET &TICKET::operator=(const TICKET &other)
     customer_id=other.customer_user_id;
 }
 
-bool TICKET::operator==(const TICKET& o) const
+bool TICKET::operator==(const TICKET &o) const
 {
     return this->ticket_number == o.ticket_number;
 }

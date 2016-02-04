@@ -3,38 +3,31 @@
 
 #include <QtGui>
 #include <QSqlDatabase>
-
-struct Userinfo
-{
-    bool isOk;
-    QString customer_user_id;
-    QString customer_id;
-};
+#include "parser.h"
 
 class MainWindow : public QDialog
 {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = 0);
-
-signals:
-
 public slots:
     void openMail();
     void connectBase();
-
+    void doAllZBS();
+    void pbarinc(int i);
 private:
     QSqlDatabase db;
     QMenuBar *menubar;
     QStatusBar *statusbar;
+    QProgressBar *pbar;
     QLayout *l;
     QMenu *menu;
     QAction *openBase;
     QAction *openMailFolder;
     QPushButton *btn;
     QTableWidget *tab;
-    Userinfo getFromEmail(QString email);
     QStringList *unknowEmails;
+    Parser *parser;
 };
 
 #endif // MAINWINDOW_H
