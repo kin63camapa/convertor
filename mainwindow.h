@@ -4,6 +4,13 @@
 #include <QtGui>
 #include <QSqlDatabase>
 
+struct Userinfo
+{
+    bool isOk;
+    QString customer_user_id;
+    QString customer_id;
+};
+
 class MainWindow : public QDialog
 {
     Q_OBJECT
@@ -15,7 +22,7 @@ signals:
 public slots:
     void openMail();
     void connectBase();
-    void tst();
+
 private:
     QSqlDatabase db;
     QMenuBar *menubar;
@@ -26,6 +33,8 @@ private:
     QAction *openMailFolder;
     QPushButton *btn;
     QTableWidget *tab;
+    Userinfo getFromEmail(QString email);
+    QStringList *unknowEmails;
 };
 
 #endif // MAINWINDOW_H

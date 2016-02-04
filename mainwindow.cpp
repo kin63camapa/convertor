@@ -18,7 +18,7 @@ QStringList loadFiles(QDir startDir, QStringList filters)
 MainWindow::MainWindow(QWidget *parent) :
     QDialog(parent)
 {
-
+    unknowEmails = NULL;
     tab = new QTableWidget(this);
     statusbar = new QStatusBar(this);
     openMailFolder = new QAction(QString::fromUtf8("Открыть Почту"),this);
@@ -54,6 +54,8 @@ void MainWindow::openMail()
     else
     {//открыли файл
         QList<TICKET> list;
+        if (unknowEmails) delete unknowEmails;
+        unknowEmails = new QStringList();
         bool id=false;
         bool num=false;
         bool time=false;
@@ -118,10 +120,27 @@ void MainWindow::openMail()
                             +buff.at(buff.size()-1);
 
                     str.remove(QRegExp("[\\n\\t\\r]"));
-                    str.remove(QRegExp("([А-я].*\"\ ?<)")); // Чистим строку до символа '<' Также чукча не знает, есть ли ветвление в регулярках отсюда нижняя строка
-                    qDebug() << QString::fromUtf8(str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z]))")).toAscii()); /* Должен удалять Non-breaking space(или U+00A0)
-                    //чего не делает, соответственно остаётся около 10 нераспиленных мыл.Одно из опорных - 1@mail.ru некоего Дмитрия Бочкарева. Глянь вывод, может
-                    возникнет идея получше)*/
+                    str.remove(QRegExp("([А-я0-9!\"].*\"\ ?<)"));
+                    // Чистим строку до символа '<' Также чукча не знает, есть ли ветвление в регулярках отсюда нижняя строка
+                    str.remove(QRegExp("([А-я!].*\\x00A0(?=[0-9A-z]))"));
+                    str.remove(">, сообщает:");
+                    str.remove(">,сообщает:");
+                    str.remove(", сообщает:");
+                    str.remove(",сообщает:");
+                    tmpTicket.email=str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z0-9]))"));
+                    // Должен удалять Non-breaking space(или U+00A0)
+                    Userinfo nfo = getFromEmail(tmpTicket.email);
+                    if (nfo.isOk)
+                    {
+                        tmpTicket.customer_id = nfo.customer_id;
+                        tmpTicket.customer_user_id = nfo.customer_user_id;
+                        qDebug() << tmpTicket.email << tmpTicket.customer_user_id << tmpTicket.customer_id;
+                    }
+                    else
+                    {
+                        if (!unknowEmails->contains(tmpTicket.email))unknowEmails->append(tmpTicket.email);
+                        //qDebug() << "can not find user or conpany by emails " << tmpTicket.email;
+                    }
                 }
 
                 if (!plainIsPresent && tmp.contains("Content-Type: text/plain; charset\"utf-8\""))
@@ -166,9 +185,11 @@ void MainWindow::openMail()
             htmlIsPresent=false;
             plainIsPresent=false;
         }
+        //закончили парсить файл
+        qDebug() << *unknowEmails;
         foreach (TICKET t, list)
         {
-            qDebug() << t.ID << t.ticket_number << t.time.toString("dd.MM.yyyy hh:mm:ss") << t.theme;
+            //qDebug() << t.ID << t.ticket_number << t.time.toString("dd.MM.yyyy hh:mm:ss") << t.theme;
 
         }
     }
@@ -184,24 +205,35 @@ void MainWindow::connectBase()
     }
 }
 
-void MainWindow::tst()
+Userinfo MainWindow::getFromEmail(QString email)
 {
-    QSqlQuery q("select login,customer_id from otrs.customer_user where email like \"holod@oootxt.ru\" order by id;",db);
-    //QSqlQuery q("select * from otrs.users;",db);
+    Userinfo userinfo;
+    userinfo.isOk=false;
+    QSqlQuery q(QString("select login,customer_id from otrs.customer_user where email like \"%1\" order by id;").arg(email),db);
+    //    QSqlQuery q("select * from otrs.users;",db);
+    //    q.last();
+    //    tab->setRowCount(q.at()+1);
+    //    q.first();
+    //    tab->setColumnCount(q.record().count());
+    //    for (int r = tab->rowCount();r;r--)
+    //    {
+    //        for (int c = tab->columnCount();c;c--)
+    //        {
+    //            QTableWidgetItem *tmp = new QTableWidgetItem(q.value(c-1).toString());
+    //            tab->setItem(r-1,c-1,tmp);
+    //        }
+    //        q.next();
+    //    }
+    int qLeight;
     q.last();
-    tab->setRowCount(q.at()+1);
+    qLeight = q.at()+1;//return -1 if req is empty
     q.first();
-    tab->setColumnCount(q.record().count());
-    for (int r = tab->rowCount();r;r--)
+    if(qLeight==1)
     {
-        for (int c = tab->columnCount();c;c--)
-        {
-            QTableWidgetItem *tmp = new QTableWidgetItem(q.value(c-1).toString());
-            tab->setItem(r-1,c-1,tmp);
-        }
-        q.next();
+        userinfo.customer_id=q.value(0).toString();
+        userinfo.customer_user_id=q.value(1).toString();
+        userinfo.isOk=(!userinfo.customer_id.isEmpty())&&(!userinfo.customer_user_id.isEmpty());
     }
     statusbar->showMessage(q.lastError().text());
-    //*/
-
+    return userinfo;
 }
