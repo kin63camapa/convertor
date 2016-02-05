@@ -31,6 +31,7 @@ void TicketPreview::showTicket(int i)
     foreach (TICKET::message m , list.at(i).messages)
     {
         ui->body->textCursor().insertText(m.time.toString("hh:mm:ss dd.MM.yyyy\n"));
+
         ui->body->textCursor().insertText(QString::fromUtf8(m.text.toAscii()));
     }
 

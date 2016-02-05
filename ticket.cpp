@@ -67,3 +67,18 @@ void TICKET::compare(TICKET other)
     other.messages=messages;
     if (other.isNew)this->operator =(other);
 }
+
+void TICKET::sortMessages()
+{
+    message tmp;
+    for(int i = 0; i < messages.size() - 1; ++i)
+    {
+        for(int j = 0; j < messages.size() - 1; ++j)
+        {
+            if (messages.at(j + 1).time < messages.at(j).time)
+            {
+                messages.swap(j,j+1);
+            }
+        }
+    }
+}

@@ -20,6 +20,7 @@ public:
     bool operator==(const TICKET& o)const;
     void clear();
     void compare(TICKET other);
+    void sortMessages();
     enum status
     {
         Closed,
