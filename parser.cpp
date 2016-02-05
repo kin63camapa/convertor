@@ -105,6 +105,7 @@ void Parser::run()
                             if (!unknowEmails->contains(tmpTicket.email))unknowEmails->append(tmpTicket.email);
                             //qDebug() << "can not find user or conpany by emails " << tmpTicket.email;
                         }
+                        tmp.clear();
 
                     }
                     bufftx.append(tmp);
@@ -116,14 +117,16 @@ void Parser::run()
                     emit progress(file->bytesAvailable());
                     tmp.resize(tmp.size()-2);
                     id=tmpTicket.ID=tmp.remove(0,3).toInt();
+                    tmp.clear();
                 }
                 foreach (QString tmptx, bufftx)
                 {
                     if (
                             tmptx.contains("Content-Disposition:")||
                             tmptx.contains("Content-Transfer-Encoding:")||
-                            tmptx.contains("[1]http://otrs.smart-tech.biz"
-                                           ))continue;
+                            tmptx.contains("[1]http://otrs.smart-tech.biz")||
+                            tmptx.isEmpty()
+                                           )continue;
                     tmp += tmptx;
                 }
                 tmpTicket.text=tmp;

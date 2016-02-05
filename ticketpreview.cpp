@@ -18,6 +18,7 @@ TicketPreview::~TicketPreview()
 
 void TicketPreview::showTicket(int i)
 {
+    index=i;
     qDebug() << i;
     ui->customer_id->setText(list.at(i).customer_id);
     ui->customer_user_id->setText(list.at(i).customer_id);
@@ -29,6 +30,7 @@ void TicketPreview::showTicket(int i)
     ui->body->clear();
     foreach (TICKET::message m , list.at(i).messages)
     {
+        ui->body->textCursor().insertText(m.time.toString("hh:mm:ss dd.MM.yyyy\n"));
         ui->body->textCursor().insertText(QString::fromUtf8(m.text.toAscii()));
     }
 
@@ -36,7 +38,7 @@ void TicketPreview::showTicket(int i)
 
 void TicketPreview::on_nextBtn_clicked()
 {
-    if(index<=list.size()-1) showTicket(index++);
+    if(index<=list.size()-1) showTicket(++index);
 }
 
 void TicketPreview::on_prewBtn_clicked()

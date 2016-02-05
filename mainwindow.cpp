@@ -105,6 +105,7 @@ void MainWindow::doAllZBS()
        case QMessageBox::Discard:
            // manual
         tab->show();
+        tab->showTicket(0);
            break;
        case QMessageBox::Cancel:
        default:
