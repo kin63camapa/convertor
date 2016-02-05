@@ -76,6 +76,8 @@ void MainWindow::connectBase()
     }
 }
 
+
+
 void MainWindow::doAllZBS()
 {
     if (!db.isOpen())
@@ -117,4 +119,10 @@ void MainWindow::doAllZBS()
 void MainWindow::pbarinc(int i)
 {
     pbar->setValue(pbar->maximum()-i);
+}
+
+int MainWindow::GetId(int i)
+{
+   //QSqlQuery q(QString("select id from otrs.ticket where tn like \"%1\" order by id;").arg(i),*db);
+   //QSqlQuery q(QString("select ticket_state_id from otrs.ticket where tn like\"%1\" order by id;").arg(i),*db); //есть ощущение, что при значении 4 - заявка закрыта.
 }

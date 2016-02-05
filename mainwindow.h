@@ -16,6 +16,7 @@ public slots:
     void connectBase();
     void doAllZBS();
     void pbarinc(int i);
+    int GetId(int i);
 private:
     QSqlDatabase db;
     QMenuBar *menubar;
