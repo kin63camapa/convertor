@@ -22,7 +22,7 @@ TICKET &TICKET::operator=(const TICKET &other)
     text=other.text;
     email=other.email;
     customer_user_id=other.customer_user_id;
-    customer_id=other.customer_user_id;
+    customer_id=other.customer_id;
     messages=other.messages;
 }
 
@@ -65,5 +65,18 @@ void TICKET::sortMessages()
                 messages.swap(j,j+1);
             }
         }
+    }
+}
+
+void TICKET::removeDuplicates()
+{
+    QString str;
+    QList<Message> tm = messages;
+    messages.clear();
+    foreach (Message m, tm)
+    {
+        if (m.text == str) continue;
+        str=m.text;
+        messages.append(m);
     }
 }

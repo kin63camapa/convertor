@@ -99,20 +99,44 @@ void Parser::run()
                 tmp.resize(tmp.size()-2);
                 id=tmpTicket.ID=tmp.remove(0,3).toInt();
                 tmp.clear();
+                bool rmSpaces=true;
                 foreach (QString tmptx, bufftx)
                 {
-                    tmptx.remove(QRegExp("[\\n\\t\\r]"));
                     if (
                             tmptx.contains("Content-Disposition:")||
                             tmptx.contains("Content-Transfer-Encoding:")||
                             tmptx.contains("[1]http://otrs.smart-tech.biz")||
                             tmptx.isEmpty()
-                                           )continue;
+                            )continue;
+                    if (rmSpaces)
+                    {
+                        tmptx.remove(QRegExp("[\\n\\t\\r]"));
+                        if (tmptx.contains("Заметка:"))
+                        {
+                            rmSpaces=false;
+                        }
+                    }else
+                    {
+                        tmptx.replace(QRegExp("[\\n\\t\\r]")," ");
+                    }
                     tmp += tmptx;
                 }
-                if (!tmpTicket.isNew) tmp.remove(QRegExp("<snip>.*<snip>"));
-                else tmp.replace("<snip>","");
-                tmpTicket.text=tmp;
+                if (!tmpTicket.isNew)
+                {
+                    tmp.remove(QRegExp("<snip>.*<snip>"));
+                }
+                else
+                {
+                    tmp.replace("<snip>","");
+                    tmp.replace("> ","\n");
+                }
+
+                tmp.replace(".Заметка:",".\nЗаметка: ");
+                tmp.replace("Назакрытие","На закрытие");
+                tmp.replace(QRegExp("Привет [\\S]*\\,")," ");
+                tmp.replace(QRegExp("Moved ticket in .*\\) "),"");
+
+                tmpTicket.text=tmp+"\n";
                 text=tmp.size();
                 //qDebug() << QString::fromUtf8(tmpTicket.text.toAscii());
             }

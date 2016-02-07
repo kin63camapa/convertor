@@ -14,6 +14,7 @@ public:
     void clear();
     void compare(TICKET other);
     void sortMessages();
+    void removeDuplicates();
     enum Status
     {
         Closed,

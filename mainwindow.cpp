@@ -203,6 +203,7 @@ void MainWindow::newTicket(TICKET t)
         t.currenIndex=list.indexOf(t);
         t.compare(list.at(t.currenIndex));
         t.sortMessages();
+        t.removeDuplicates();
         list.replace(t.currenIndex,t);
     }
     else
