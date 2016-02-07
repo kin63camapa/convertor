@@ -75,7 +75,7 @@ void TICKET::removeDuplicates()
     messages.clear();
     foreach (Message m, tm)
     {
-        if (m.text == str) continue;
+        if (m.text == str || m.text.isEmpty()) continue;
         str=m.text;
         messages.append(m);
     }

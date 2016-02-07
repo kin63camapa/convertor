@@ -19,7 +19,8 @@ public:
     {
         Closed,
         Exist,
-        New
+        New,
+        Unknown
     } state;
     struct Message
     {

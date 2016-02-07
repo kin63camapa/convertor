@@ -8,7 +8,7 @@ TicketPreview::TicketPreview(QWidget *parent) :
     ui->setupUi(this);
     connect(this->ui->nextBtn,SIGNAL(clicked()),this,SIGNAL(nextBtnClicked()));
     connect(this->ui->prewBtn,SIGNAL(clicked()),this,SIGNAL(prewBtnClicked()));
-    ui->saveBtm->setDisabled(true);//временная мера не работает сохранение корректно
+    //ui->saveBtm->setDisabled(true);//временная мера не работает сохранение корректно
 }
 
 TicketPreview::~TicketPreview()
@@ -60,10 +60,19 @@ void TicketPreview::on_saveBtm_clicked()
     {
         if (s.contains(QRegExp("\\d\\d\\:\\d\\d\\:\\d\\d\\s\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d")))
         {
-            if (!m.time.isNull())t.messages.append(m);
+            if (!m.time.isNull())
+            {
+                t.messages.append(m);
+            }
             m.time = QDateTime::fromString(s,"hh:mm:ss dd.MM.yyyy");
-        }else m.text=QString(s.toLocal8Bit())+"\n";
+            m.text.clear();
+        }
+        else
+        {
+            m.text+=QString(s.toLocal8Bit()+"\n");
+        }
     }
+    t.messages.append(m);
     emit save(t);
     showTicket(t);
 

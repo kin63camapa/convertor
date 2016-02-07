@@ -49,11 +49,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 }
 
-void MainWindow::editTicket(TICKET t)
-{
-    list.replace(t.currenIndex,t);
-}
-
 void MainWindow::openMail()
 {
     if (!db.isOpen())
@@ -106,6 +101,30 @@ void MainWindow::connectBase()
     }
 }
 
+void MainWindow::editTicket(TICKET t)
+{
+    list.replace(t.currenIndex,t);
+}
+
+void MainWindow::nextBtnClicked()
+{
+    index++;
+    tab->showTicket(list.at(index),list.size());
+}
+
+void MainWindow::prewBtnClicked()
+{
+    index--;
+    tab->showTicket(list.at(index),list.size());
+}
+
+void MainWindow::pbarinc(int i)
+{
+    pbar->setValue(pbar->maximum()-i);
+}
+
+
+
 TICKET MainWindow::getUserinfo(TICKET *t)
 {
     TICKET ret;
@@ -129,66 +148,24 @@ TICKET MainWindow::getUserinfo(TICKET *t)
     return ret;
 }
 
-
-void MainWindow::nextBtnClicked()
+TICKET::Status MainWindow::getState(TICKET *t)
 {
-    index++;
-    tab->showTicket(list.at(index),list.size());
-}
-
-void MainWindow::prewBtnClicked()
-{
-    index--;
-    tab->showTicket(list.at(index),list.size());
-}
-
-void MainWindow::doAllZBS()
-{
-    if (!db.isOpen())
+    QSqlQuery q(QString("select ticket_state_id from otrs.ticket where tn like\"%1\" order by id;").arg(t->ticket_number),db);
+    int qLeight;
+    q.last();
+    qLeight = q.at()+1;//return -1 if req is empty
+    q.first();
+    if(qLeight==1)
     {
-        QMessageBox(QMessageBox::Critical,QString::fromUtf8("Апшипка"),QString::fromUtf8("Нет подключения к дазе банных!\nОткройте меню \"File\"->\"Открыть Базу\"")).exec();
-        return;
+        //есть ощущение, что при значении 4 - заявка закрыта.
+        if (q.value(0).toInt()==4) t->state = TICKET::Closed;
+        else t->state = TICKET::Exist;
     }
-    if (list.isEmpty())
-    {
-        QMessageBox(QMessageBox::Critical,QString::fromUtf8("Апшипка"),QString::fromUtf8("Не прочитан файл почты или возникли ошибки при его обработке.\nОткройте меню \"File\"->\"Открыть Почу\"")).exec();
-        return;
-    }
-
-    index=0;
-    tab->show();
-    tab->showTicket(list.at(0),list.size());
-////    getUserinfo(&t);
-////    getState(&t);
-
-//    QMessageBox msgBox;
-//    msgBox.setWindowTitle(QString::fromUtf8("СТОЯТЬ!!!"));
-//    msgBox.setText(QString::fromUtf8("Программа собирается сделать все збс, но может получится ровно наоборот!\nСобрано %1 тикетов\nИз них с неизвестными e-mail %2\nПодключен к базе %3\n").arg(QString::number(list.size())).arg(QString::number(unknowEmails->size())).arg(db.hostName()+":"+QString::number(db.port())));
-//    msgBox.setInformativeText(QString::fromUtf8("Продолжаем?"));
-//    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-//    msgBox.button(QMessageBox::Save)->setText(QString::fromUtf8("Автоматически"));
-//    msgBox.button(QMessageBox::Discard)->setText(QString::fromUtf8("Вручную"));
-//    msgBox.button(QMessageBox::Cancel)->setText(QString::fromUtf8("Не-не-не, Девид Блейн, раскукож меня обратно!"));
-//    msgBox.setDefaultButton(QMessageBox::Cancel);
-//    int ret = msgBox.exec();
-//    switch (ret) {
-//    case QMessageBox::Save:
-//        // auto
-//        break;
-//    case QMessageBox::Discard:
-//        // manual
-//        break;
-//    case QMessageBox::Cancel:
-//    default:
-//        return;
-//        break;
-//    }
+    else if (qLeight==0) t->state = TICKET::New;
+         else t->state = TICKET::Unknown;
+    return t->state;
 }
 
-void MainWindow::pbarinc(int i)
-{
-    pbar->setValue(pbar->maximum()-i);
-}
 
 void MainWindow::newTicket(TICKET t)
 {
@@ -198,6 +175,7 @@ void MainWindow::newTicket(TICKET t)
     m.text=t.text;
     t.messages.append(m);
     getUserinfo(&t);
+    getState(&t);
     if (list.contains(t))
     {
         t.currenIndex=list.indexOf(t);
@@ -228,8 +206,46 @@ int MainWindow::GetId(TICKET t)
     {
         return -1;
     }
-    //QSqlQuery q(QString("select ticket_state_id from otrs.ticket where tn like\"%1\" order by id;").arg(i),*db);
-    //есть ощущение, что при значении 4 - заявка закрыта.
+}
+
+void MainWindow::doAllZBS()
+{
+    if (!db.isOpen())
+    {
+        QMessageBox(QMessageBox::Critical,QString::fromUtf8("Апшипка"),QString::fromUtf8("Нет подключения к дазе банных!\nОткройте меню \"File\"->\"Открыть Базу\"")).exec();
+        return;
+    }
+    if (list.isEmpty())
+    {
+        QMessageBox(QMessageBox::Critical,QString::fromUtf8("Апшипка"),QString::fromUtf8("Не прочитан файл почты или возникли ошибки при его обработке.\nОткройте меню \"File\"->\"Открыть Почу\"")).exec();
+        return;
+    }
+
+    index=0;
+    tab->show();
+    tab->showTicket(list.at(0),list.size());
+//    QMessageBox msgBox;
+//    msgBox.setWindowTitle(QString::fromUtf8("СТОЯТЬ!!!"));
+//    msgBox.setText(QString::fromUtf8("Программа собирается сделать все збс, но может получится ровно наоборот!\nСобрано %1 тикетов\nИз них с неизвестными e-mail %2\nПодключен к базе %3\n").arg(QString::number(list.size())).arg(QString::number(unknowEmails->size())).arg(db.hostName()+":"+QString::number(db.port())));
+//    msgBox.setInformativeText(QString::fromUtf8("Продолжаем?"));
+//    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+//    msgBox.button(QMessageBox::Save)->setText(QString::fromUtf8("Автоматически"));
+//    msgBox.button(QMessageBox::Discard)->setText(QString::fromUtf8("Вручную"));
+//    msgBox.button(QMessageBox::Cancel)->setText(QString::fromUtf8("Не-не-не, Девид Блейн, раскукож меня обратно!"));
+//    msgBox.setDefaultButton(QMessageBox::Cancel);
+//    int ret = msgBox.exec();
+//    switch (ret) {
+//    case QMessageBox::Save:
+//        // auto
+//        break;
+//    case QMessageBox::Discard:
+//        // manual
+//        break;
+//    case QMessageBox::Cancel:
+//    default:
+//        return;
+//        break;
+//    }
 }
 
 bool MainWindow::inject(TICKET t)
