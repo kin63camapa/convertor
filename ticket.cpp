@@ -34,7 +34,7 @@ bool TICKET::operator==(const TICKET &o) const
 void TICKET::clear()
 {
     ID = 0;
-    injectID = 0;
+    injectID = -1;
     ticket_number = 0;
     isNew = false;
     QDateTime clearDT;

@@ -12,11 +12,12 @@ MainWindow::MainWindow(QWidget *parent) :
     lastId = -1;
     index = 0;
     parser = new Parser(this);
-    unknowEmails = new QStringList();
     tab = new TicketPreview(this);
+    log = new QPlainTextEdit(this);
     connect(tab,SIGNAL(nextBtnClicked()),this,SLOT(nextBtnClicked()));
     connect(tab,SIGNAL(prewBtnClicked()),this,SLOT(prewBtnClicked()));
     connect(tab,SIGNAL(save(TICKET)),this,SLOT(editTicket(TICKET)));
+    connect(tab,SIGNAL(inject(TICKET)),this,SLOT(injectTicket(TICKET)));
     statusbar = new QStatusBar(this);
     openMailFolder = new QAction(QString::fromUtf8("Открыть Почту"),this);
     menubar = new QMenuBar(this);
@@ -26,18 +27,20 @@ MainWindow::MainWindow(QWidget *parent) :
     menu->addAction(openBase);
     menu->addAction(openMailFolder);
     menubar->addMenu(menu);
+    btn = new QPushButton(this);
+    btn->setText(QString::fromUtf8("Сделать все збс"));
     pbar = new QProgressBar(this);
-    connect(this->parser,SIGNAL(finished()),this->pbar,SLOT(hide()));
+    connect(this->parser,SIGNAL(finished()),this,SLOT(parsetFinished()));
     connect(this->parser,SIGNAL(progress(int)),this,SLOT(pbarinc(int)));
     connect(this->parser,SIGNAL(newTicket(TICKET)),this,SLOT(newTicket(TICKET)));
     connect(openBase,SIGNAL(triggered()),this,SLOT(connectBase()));
     connect(openMailFolder,SIGNAL(triggered()),this,SLOT(openMail()));
-    btn = new QPushButton(this);
-    btn->setText(QString::fromUtf8("Сделать все збс"));
     connect(btn,SIGNAL(clicked()),this,SLOT(doAllZBS()));
     l = new QVBoxLayout(this);
     l->setContentsMargins(0,0,0,0);
     l->addWidget(menubar);
+    l->addWidget(log);
+    log->hide();
     l->addWidget(tab);
     tab->hide();
     l->addWidget(pbar);
@@ -65,11 +68,12 @@ void MainWindow::openMail()
     else
     {
         list.clear();
-        unknowEmails->clear();
+        unknowEmails.clear();
         parser->initialization(file);
         pbar->setMaximum(file->bytesAvailable());
         pbar->setValue(0);
         pbar->show();
+        this->btn->setDisabled(true);
         parser->start();
     }
 }
@@ -143,7 +147,7 @@ TICKET MainWindow::getUserinfo(TICKET *t)
     else
     {
         ret = *t;
-        if (!unknowEmails->contains(ret.email))unknowEmails->append(ret.email);
+        if (!unknowEmails.contains(ret.email))unknowEmails.append(ret.email);
     }
     return ret;
 }
@@ -170,25 +174,38 @@ TICKET::Status MainWindow::getState(TICKET *t)
 void MainWindow::newTicket(TICKET t)
 {
     if ((t.creationTime < periodStart && !t.isNew) || t.creationTime > periodEnd) return;
+    parser->pause = true;
     TICKET::Message m;
     m.time=t.creationTime;
     m.text=t.text;
     t.messages.append(m);
     getUserinfo(&t);
     getState(&t);
-    if (list.contains(t))
+    switch (t.state)
     {
-        t.currenIndex=list.indexOf(t);
-        t.compare(list.at(t.currenIndex));
-        t.sortMessages();
-        t.removeDuplicates();
-        list.replace(t.currenIndex,t);
+    case TICKET::Exist:
+        t.injectID=GetId(t);
+    case TICKET::New:
+    case TICKET::Unknown:
+        if (list.contains(t))
+        {
+            t.currenIndex=list.indexOf(t);
+            t.compare(list.at(t.currenIndex));
+            t.sortMessages();
+            t.removeDuplicates();
+            if (t.injectID==-1){t.injectID=lastId+t.currenIndex+1;}
+            list.replace(t.currenIndex,t);
+        }
+        else
+        {
+            t.currenIndex=list.size();
+            if (t.injectID==-1){t.injectID=lastId+t.currenIndex+1;}
+            list.append(t);
+        }
+    case TICKET::Closed:
+        break;
     }
-    else
-    {
-        t.currenIndex=list.size();
-        list.append(t);
-    }
+    parser->pause = false;
 }
 
 int MainWindow::GetId(TICKET t)
@@ -220,33 +237,65 @@ void MainWindow::doAllZBS()
         QMessageBox(QMessageBox::Critical,QString::fromUtf8("Апшипка"),QString::fromUtf8("Не прочитан файл почты или возникли ошибки при его обработке.\nОткройте меню \"File\"->\"Открыть Почу\"")).exec();
         return;
     }
-
-    index=0;
-    tab->show();
-    tab->showTicket(list.at(0),list.size());
-//    QMessageBox msgBox;
-//    msgBox.setWindowTitle(QString::fromUtf8("СТОЯТЬ!!!"));
-//    msgBox.setText(QString::fromUtf8("Программа собирается сделать все збс, но может получится ровно наоборот!\nСобрано %1 тикетов\nИз них с неизвестными e-mail %2\nПодключен к базе %3\n").arg(QString::number(list.size())).arg(QString::number(unknowEmails->size())).arg(db.hostName()+":"+QString::number(db.port())));
-//    msgBox.setInformativeText(QString::fromUtf8("Продолжаем?"));
-//    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-//    msgBox.button(QMessageBox::Save)->setText(QString::fromUtf8("Автоматически"));
-//    msgBox.button(QMessageBox::Discard)->setText(QString::fromUtf8("Вручную"));
-//    msgBox.button(QMessageBox::Cancel)->setText(QString::fromUtf8("Не-не-не, Девид Блейн, раскукож меня обратно!"));
-//    msgBox.setDefaultButton(QMessageBox::Cancel);
-//    int ret = msgBox.exec();
-//    switch (ret) {
-//    case QMessageBox::Save:
-//        // auto
-//        break;
-//    case QMessageBox::Discard:
-//        // manual
-//        break;
-//    case QMessageBox::Cancel:
-//    default:
-//        return;
-//        break;
-//    }
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(QString::fromUtf8("СТОЯТЬ!!!"));
+    msgBox.setText(QString::fromUtf8("Программа собирается сделать все збс, но может получится ровно наоборот!\nСобрано %1 тикетов\nИз них с неизвестными e-mail %2\nПодключен к базе %3\n").arg(QString::number(list.size())).arg(QString::number(unknowEmails.size())).arg(db.hostName()+":"+QString::number(db.port())));
+    msgBox.setInformativeText(QString::fromUtf8("Продолжаем?"));
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.button(QMessageBox::Save)->setText(QString::fromUtf8("Автоматически"));
+    msgBox.button(QMessageBox::Discard)->setText(QString::fromUtf8("Вручную"));
+    msgBox.button(QMessageBox::Cancel)->setText(QString::fromUtf8("Не-не-не, Девид Блейн, раскукож меня обратно!"));
+    msgBox.setDefaultButton(QMessageBox::Cancel);
+    int ret = msgBox.exec();
+    switch (ret) {
+    case QMessageBox::Save:
+        // auto
+        log->show();
+        foreach (TICKET t, list)
+        {
+            inject(t);
+        }
+        break;
+    case QMessageBox::Discard:
+        // manual
+        log->hide();
+        index=0;
+        tab->show();
+        tab->showTicket(list.at(0),list.size());
+        break;
+    case QMessageBox::Cancel:
+    default:
+        return;
+        break;
+    }
 }
+
+void MainWindow::parsetFinished()
+{
+    pbar->hide();
+    btn->setEnabled(true);
+    if (unknowEmails.size())
+    {
+        log->textCursor().insertText(QString::fromUtf8("Список неизвестных адресов:\n"));
+        foreach (QString s, unknowEmails)
+        {
+            log->textCursor().insertText(s+"\n");
+        }
+        log->textCursor().insertText(QString::fromUtf8("Конец списка нейзвестных адресов.\n"));
+        log->show();
+    }
+
+}
+
+void MainWindow::injectTicket(TICKET t)
+{
+    if (QMessageBox(QMessageBox::Warning,
+                    QString::fromUtf8("СТОЯТЬ!!!"),
+                    QString::fromUtf8("Вы собираетесь записать тикет в базу!\nОтменить это действие невозможно!\nПродолжать?"),
+                    QMessageBox::Yes|QMessageBox::No).exec() != QMessageBox::Yes) return;
+    inject(t);
+}
+
 
 bool MainWindow::inject(TICKET t)
 {

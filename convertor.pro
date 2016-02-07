@@ -17,15 +17,18 @@ SOURCES += main.cpp \
     sqlconnectdialog.cpp \
     mainwindow.cpp \
     parser.cpp \
-    ticketpreview.cpp
+    ticketpreview.cpp \
+    finddialog.cpp
 
 HEADERS  += \
     ticket.h \
     sqlconnectdialog.h \
     mainwindow.h \
     parser.h \
-    ticketpreview.h
+    ticketpreview.h \
+    finddialog.h
 
 FORMS += \
     sqlconnectdialog.ui \
-    ticketpreview.ui
+    ticketpreview.ui \
+    finddialog.ui

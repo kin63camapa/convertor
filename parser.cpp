@@ -4,6 +4,7 @@
 Parser::Parser(QObject *parent) :
     QThread(parent)
 {
+    pause = false;
 }
 
 void Parser::initialization(QFile *file)
@@ -31,6 +32,7 @@ void Parser::run()
     {//пока файл не кончится
         do
         {//внутри цикла 1 письмо
+            while(pause)this->msleep(1);
             if (!time && tmp.contains(QRegExp("^From \\d*@xxx ")))
             {//первая строка мыла, забираем дату+время
                 QLocale loc(QLocale::English);
@@ -57,6 +59,7 @@ void Parser::run()
                 QStringList bufftx;
                 do
                 {
+                    while(pause)this->msleep(1);
                     tmp=file->readLine();
                     emit progress(file->bytesAvailable());
                     if (!theme && !tmpTicket.isNew && tmp.contains(QRegExp("^Уведомление о новой заявке! \\(.*\\)")))
@@ -67,6 +70,7 @@ void Parser::run()
                         QStringList buff;
                         do
                         {
+                            while(pause)this->msleep(1);
                             buff.append(file->readLine());
                             emit progress(file->bytesAvailable());
                         }
@@ -102,6 +106,7 @@ void Parser::run()
                 bool rmSpaces=true;
                 foreach (QString tmptx, bufftx)
                 {
+                    while(pause)this->msleep(1);
                     if (
                             tmptx.contains("Content-Disposition:")||
                             tmptx.contains("Content-Transfer-Encoding:")||

@@ -20,11 +20,14 @@ signals:
     void nextBtnClicked();
     void prewBtnClicked();
     void save(TICKET);
+    void inject(TICKET);
 private slots:
     void on_saveBtm_clicked();
+    void on_injectBtn_clicked();
 
 private:
-    Ui::TicketPreview *ui;  
+    Ui::TicketPreview *ui;
+    void readTicket(bool inj);
 };
 
 #endif // TICKETPREVIEW_H

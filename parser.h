@@ -11,6 +11,7 @@ class Parser : public QThread
 public:
     explicit Parser(QObject *parent = 0);
     void initialization(QFile *file);
+    bool pause;
 signals:
     void progress(int);
     void newTicket(TICKET);

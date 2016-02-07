@@ -16,6 +16,16 @@ TicketPreview::~TicketPreview()
     delete ui;
 }
 
+void TicketPreview::on_saveBtm_clicked()
+{
+    readTicket(false);
+}
+
+void TicketPreview::on_injectBtn_clicked()
+{
+    readTicket(true);
+}
+
 void TicketPreview::showTicket(TICKET t,int size)
 {
     ui->nextBtn->setDisabled(t.currenIndex==size-1);
@@ -42,7 +52,7 @@ void TicketPreview::showTicket(TICKET t)
     }
 }
 
-void TicketPreview::on_saveBtm_clicked()
+void TicketPreview::readTicket(bool inj)
 {
     TICKET t;
     t.currenIndex = ui->POS->value();
@@ -73,7 +83,7 @@ void TicketPreview::on_saveBtm_clicked()
         }
     }
     t.messages.append(m);
-    emit save(t);
+    if (inj) emit inject(t);
+    else emit save(t);
     showTicket(t);
-
 }

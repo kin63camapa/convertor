@@ -15,9 +15,11 @@ public slots:
     void openMail();
     void connectBase();
     void doAllZBS();
+    void parsetFinished();
     void pbarinc(int i);
     void newTicket(TICKET t);
     void editTicket(TICKET t);
+    void injectTicket(TICKET t);
     void nextBtnClicked();
     void prewBtnClicked();
 private:
@@ -29,10 +31,11 @@ private:
     QAction *openBase;
     QAction *openMailFolder;
     QPushButton *btn;
+    QPlainTextEdit *log;
     TicketPreview *tab;
     int lastId;
     int index;
-    QStringList *unknowEmails;
+    QStringList unknowEmails;
     Parser *parser;
     QSqlDatabase db;
     QList<TICKET> list;
