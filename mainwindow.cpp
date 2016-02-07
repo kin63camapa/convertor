@@ -7,11 +7,17 @@ MainWindow::MainWindow(QWidget *parent) :
     QDialog(parent)
 {
     qRegisterMetaType<TICKET>("TICKET");
+    qRegisterMetaType<FindDialog::FindType>("FindDialog::FindType");
     periodStart = QDateTime::fromString("00:00:00 01.01.2000","hh:mm:ss dd.MM.yyyy");
     periodEnd = QDateTime::fromString("00:00:00 01.01.2100","hh:mm:ss dd.MM.yyyy");
     lastId = -1;
     index = 0;
+    lastFindQEry.clear();
+    lastFindAnswer = -1;
+
     parser = new Parser(this);
+    fdialog = new FindDialog(this);
+    connect(fdialog,SIGNAL(fnd(FindDialog::FindType,QString)),this,SLOT(fnd(FindDialog::FindType,QString)));
     tab = new TicketPreview(this);
     log = new QPlainTextEdit(this);
     connect(tab,SIGNAL(nextBtnClicked()),this,SLOT(nextBtnClicked()));
@@ -22,11 +28,16 @@ MainWindow::MainWindow(QWidget *parent) :
     openMailFolder = new QAction(QString::fromUtf8("Открыть Почту"),this);
     menubar = new QMenuBar(this);
     menu = new QMenu(menubar);
+    fmenu = new QMenu(menubar);
     openBase = new QAction(QString::fromUtf8("Открыть Базу"),this);
+    find = new QAction(QString::fromUtf8("Найти тикет"),this);
     menu->setTitle("File");
+    fmenu->setTitle("Find");
     menu->addAction(openBase);
     menu->addAction(openMailFolder);
+    fmenu->addAction(find);
     menubar->addMenu(menu);
+    menubar->addMenu(fmenu);
     btn = new QPushButton(this);
     btn->setText(QString::fromUtf8("Сделать все збс"));
     pbar = new QProgressBar(this);
@@ -36,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(openBase,SIGNAL(triggered()),this,SLOT(connectBase()));
     connect(openMailFolder,SIGNAL(triggered()),this,SLOT(openMail()));
     connect(btn,SIGNAL(clicked()),this,SLOT(doAllZBS()));
+    connect(find,SIGNAL(triggered()),this,SLOT(findTicket()));
     l = new QVBoxLayout(this);
     l->setContentsMargins(0,0,0,0);
     l->addWidget(menubar);
@@ -48,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent) :
     l->addWidget(statusbar);
     pbar->hide();
     this->setGeometry(this->geometry().x(),this->geometry().y(),500,400);
+    find->setDisabled(true);
     connectBase();
 
 }
@@ -122,6 +135,119 @@ void MainWindow::prewBtnClicked()
     tab->showTicket(list.at(index),list.size());
 }
 
+void MainWindow::fnd(FindDialog::FindType t, QString s)
+{
+
+    if (s.isEmpty())
+    {
+        lastFindQEry = s;
+        lastFindAnswer = -1;
+        if (list.size()) tab->showTicket(list.at(0),list.size());
+        QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Задан пустой поисковый запрос!/nСчетчики сброшены. Поиск не выполнялся.")).exec();
+        return;
+    }
+    switch (t)
+    {
+    case FindDialog::byId:
+    {
+        int i=0,id=s.toInt();
+        foreach (TICKET tmp, list)
+        {
+            if(tmp.ID == id)
+            {
+                tab->showTicket(list.at(i),list.size());
+                return;
+            }
+            i++;
+        }
+        QSqlQuery q(QString("select ticket_state_id from otrs.ticket where id like\"%1\" order by id;").arg(id),db);
+        int qLeight;
+        q.last();
+        qLeight = q.at()+1;//return -1 if req is empty
+        q.first();
+        if(qLeight==1)
+        {
+            if (q.value(0).toInt()==4)
+            {
+                QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!\nПохоже эта заявка ЕСТЬ В БАЗЕ и ЗАКРЫТА!.")).exec();
+                return;
+            }
+        }
+        QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!")).exec();
+        break;
+    }
+    case FindDialog::byNum:
+    {
+        TICKET tmp;
+        tmp.ticket_number = s.toInt();
+        int i=list.indexOf(tmp);
+        if (i==-1)
+        {
+            getState(&tmp);
+            if (tmp.state == TICKET::Closed)
+                QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!\nПохоже эта заявка ЕСТЬ В БАЗЕ и ЗАКРЫТА!.")).exec();
+            else QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!\nПохоже такого тикета нет.")).exec();
+
+            return;
+        }
+        tab->showTicket(list.at(i),list.size());
+        break;
+    }
+    case FindDialog::byPos:
+    {
+        if (s.toInt()>list.size() || s.toInt() < 0)
+        {
+            QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!\nПохоже вы просите невозможного.")).exec();
+            return;
+        }
+        tab->showTicket(list.at(s.toInt()),list.size());
+        break;
+    }
+    case FindDialog::byStr:
+    {
+        if (!lastFindQEry.isEmpty())
+        {
+            if (lastFindQEry != s)
+            {
+                lastFindQEry = s;
+                lastFindAnswer = -1;
+            }
+        }
+        else
+        {
+            lastFindQEry = s;
+            lastFindAnswer = -1;
+        }
+        int i=0;
+        foreach (TICKET tmp, list)
+        {
+            foreach (TICKET::Message m, tmp.messages)
+            {
+                if (m.text.contains(s.toLocal8Bit()) && i > lastFindAnswer)
+                {
+                    tab->showTicket(list.at(i),list.size());
+                    lastFindAnswer=i;
+                    return;
+                }
+            }
+            i++;
+        }
+        QString addon;
+        if (lastFindAnswer!=-1)
+        {
+            addon=QString::fromUtf8("\nПри следующем нажатии кнопки поиска он начнется сначала.");
+            lastFindAnswer=-1;
+        }
+        QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!")+addon).exec();
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+}
+
 void MainWindow::pbarinc(int i)
 {
     pbar->setValue(pbar->maximum()-i);
@@ -166,7 +292,7 @@ TICKET::Status MainWindow::getState(TICKET *t)
         else t->state = TICKET::Exist;
     }
     else if (qLeight==0) t->state = TICKET::New;
-         else t->state = TICKET::Unknown;
+    else t->state = TICKET::Unknown;
     return t->state;
 }
 
@@ -251,6 +377,8 @@ void MainWindow::doAllZBS()
     case QMessageBox::Save:
         // auto
         log->show();
+        find->setDisabled(true);
+        fdialog->hide();
         foreach (TICKET t, list)
         {
             inject(t);
@@ -261,6 +389,7 @@ void MainWindow::doAllZBS()
         log->hide();
         index=0;
         tab->show();
+        find->setDisabled(false);
         tab->showTicket(list.at(0),list.size());
         break;
     case QMessageBox::Cancel:
@@ -294,6 +423,11 @@ void MainWindow::injectTicket(TICKET t)
                     QString::fromUtf8("Вы собираетесь записать тикет в базу!\nОтменить это действие невозможно!\nПродолжать?"),
                     QMessageBox::Yes|QMessageBox::No).exec() != QMessageBox::Yes) return;
     inject(t);
+}
+
+void MainWindow::findTicket()
+{
+    fdialog->show();
 }
 
 

@@ -14,6 +14,17 @@ class FindDialog : public QDialog
 public:
     explicit FindDialog(QWidget *parent = 0);
     ~FindDialog();
+    enum FindType
+    {
+        byId,
+        byNum,
+        byPos,
+        byStr
+    };
+signals:
+    void fnd(FindDialog::FindType,QString);
+private slots:
+    void on_fBtn_clicked();
 
 private:
     Ui::FindDialog *ui;

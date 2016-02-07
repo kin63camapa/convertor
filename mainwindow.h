@@ -5,6 +5,7 @@
 #include <QSqlDatabase>
 #include "parser.h"
 #include "ticketpreview.h"
+#include "finddialog.h"
 
 class MainWindow : public QDialog
 {
@@ -20,19 +21,24 @@ public slots:
     void newTicket(TICKET t);
     void editTicket(TICKET t);
     void injectTicket(TICKET t);
+    void findTicket();
     void nextBtnClicked();
     void prewBtnClicked();
+    void fnd(FindDialog::FindType t,QString s);
 private:
     QLayout *l;
     QMenu *menu;
+    QMenu *fmenu;
     QMenuBar *menubar;
     QStatusBar *statusbar;
     QProgressBar *pbar;
     QAction *openBase;
     QAction *openMailFolder;
+    QAction *find;
     QPushButton *btn;
     QPlainTextEdit *log;
     TicketPreview *tab;
+    FindDialog *fdialog;
     int lastId;
     int index;
     QStringList unknowEmails;
@@ -46,6 +52,10 @@ private:
     TICKET getUserinfo(TICKET *t);
     TICKET::Status getState(TICKET *t);
     bool inject(TICKET t);
+
+    QString lastFindQEry;
+    int lastFindAnswer;
+
 
 };
 
