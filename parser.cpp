@@ -6,18 +6,13 @@ Parser::Parser(QObject *parent) :
 {
 }
 
-void Parser::initialization(QStringList *unknowEmails, QFile *file, QSqlDatabase *db)
+void Parser::initialization(QFile *file)
 {
-    this->unknowEmails=unknowEmails;
-    //this->list=list;
     this->file=file;
-    this->db=db;
 }
 
 void Parser::run()
 {
-    list.clear();
-    unknowEmails->clear();
     bool id=false;
     bool num=false;
     bool time=false;
@@ -93,34 +88,20 @@ void Parser::run()
                         str.remove(",сообщает:");
                         tmpTicket.email=str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z0-9]))"));
                         // Должен удалять Non-breaking space(или U+00A0)
-                        Userinfo nfo = getFromEmail(tmpTicket.email);
-                        if (nfo.isOk)
-                        {
-                            tmpTicket.customer_id = nfo.customer_id;
-                            tmpTicket.customer_user_id = nfo.customer_user_id;
-                            //qDebug() << tmpTicket.email << tmpTicket.customer_user_id << tmpTicket.customer_id;
-                        }
-                        else
-                        {
-                            if (!unknowEmails->contains(tmpTicket.email))unknowEmails->append(tmpTicket.email);
-                            //qDebug() << "can not find user or conpany by emails " << tmpTicket.email;
-                        }
                         tmp.clear();
 
                     }
                     bufftx.append(tmp);
                 }
-                while(!bufftx.at(bufftx.size()-1).contains("[1]http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"));
-                if (!id)
-                {//получаем id старой базы
-                    tmp = file->readLine();
-                    emit progress(file->bytesAvailable());
-                    tmp.resize(tmp.size()-2);
-                    id=tmpTicket.ID=tmp.remove(0,3).toInt();
-                    tmp.clear();
-                }
+                while(!bufftx.at(bufftx.size()-1).contains("http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"));
+                tmp = file->readLine();
+                emit progress(file->bytesAvailable());
+                tmp.resize(tmp.size()-2);
+                id=tmpTicket.ID=tmp.remove(0,3).toInt();
+                tmp.clear();
                 foreach (QString tmptx, bufftx)
                 {
+                    tmptx.remove(QRegExp("[\\n\\t\\r]"));
                     if (
                             tmptx.contains("Content-Disposition:")||
                             tmptx.contains("Content-Transfer-Encoding:")||
@@ -129,28 +110,17 @@ void Parser::run()
                                            )continue;
                     tmp += tmptx;
                 }
+                if (!tmpTicket.isNew) tmp.remove(QRegExp("<snip>.*<snip>"));
+                else tmp.replace("<snip>","");
                 tmpTicket.text=tmp;
                 text=tmp.size();
-                //qDebug() << QString::fromUtf8(tmp.toAscii());
+                //qDebug() << QString::fromUtf8(tmpTicket.text.toAscii());
             }
             tmp = file->readLine();
             emit progress(file->bytesAvailable());
         }while(file->bytesAvailable()&&!tmp.contains(QRegExp("From \\d*@xxx ")));
         //тут тикет по результатам чтения письма
-        TICKET::message m;
-        m.time=tmpTicket.creationTime;
-        m.text=tmpTicket.text;
-        tmpTicket.messages.append(m);
-        if (list.contains(tmpTicket))
-        {
-            tmpTicket.compare(list.at(list.indexOf(tmpTicket)));
-            list.removeAt(list.indexOf(tmpTicket));
-            list.append(tmpTicket);
-        }
-        else
-        {
-            list.append(tmpTicket);
-        }
+        emit newTicket(tmpTicket);
         //прибераемся
         tmpTicket.clear();
         id=false;
@@ -166,35 +136,4 @@ void Parser::run()
         plainIsPresent=false;
     }
     //закончили парсить файл
-    qDebug() << *unknowEmails;
-    foreach (TICKET t, list)
-    {
-        qDebug() << t.ID << t.ticket_number << t.creationTime.toString("dd.MM.yyyy hh:mm:ss") << t.theme << t.email<<t.customer_user_id<<t.customer_id;
-        foreach (TICKET::message m, t.messages)
-        {
-            //qDebug() << m.time.toString("dd.MM.yyyy hh:mm:ss") << QString::fromUtf8(m.text.toAscii());
-        }
-
-    }
-}
-
-
-Userinfo Parser::getFromEmail(QString email)
-{
-    Userinfo userinfo;
-    userinfo.isOk=false;
-    QSqlQuery q(QString("select login,customer_id from otrs.customer_user where email like \"%1\" order by id;").arg(email),*db);
-    //    statusbar->showMessage(q.lastError().text());
-    int qLeight;
-    q.last();
-    qLeight = q.at()+1;//return -1 if req is empty
-    q.first();
-    if(qLeight==1)
-    {
-        userinfo.customer_user_id=q.value(0).toString();
-        userinfo.customer_id=q.value(1).toString();
-        userinfo.isOk=(!userinfo.customer_id.isEmpty())&&(!userinfo.customer_user_id.isEmpty());
-    }
-
-    return userinfo;
 }

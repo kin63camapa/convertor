@@ -10,16 +10,14 @@ class Parser : public QThread
     Q_OBJECT
 public:
     explicit Parser(QObject *parent = 0);
-    void initialization(QStringList *unknowEmails,QFile *file,QSqlDatabase *db);
+    void initialization(QFile *file);
 signals:
     void progress(int);
+    void newTicket(TICKET);
 protected:
     void run();
 private:
-    QStringList *unknowEmails;
     QFile *file;
-    QSqlDatabase *db;
-    Userinfo getFromEmail(QString email);
 };
 
 #endif // Parser_H

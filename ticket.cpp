@@ -1,13 +1,5 @@
 #include "ticket.h"
 
-QList<TICKET> list;
-
-//TICKET::TICKET(QObject *parent) :
-//    QObject(parent)
-//{
-//    clear();
-//}
-
 TICKET::TICKET()
 {
     clear();
@@ -15,26 +7,19 @@ TICKET::TICKET()
 
 TICKET::TICKET(const TICKET &other)
 {
-    ID = other.ID;
-    ticket_number = other.ticket_number;
-    isNew = other.isNew;
-    creationTime=other.creationTime;
-    theme=other.theme;
-    text=other.theme;
-    email=other.email;
-    customer_user_id=other.customer_user_id;
-    customer_id=other.customer_user_id;
-    messages=other.messages;
+    this->operator =(other);
 }
 
 TICKET &TICKET::operator=(const TICKET &other)
 {
     ID = other.ID;
+    currenIndex = other.currenIndex;
+    injectID = other.injectID;
     ticket_number = other.ticket_number;
     isNew = other.isNew;
     creationTime=other.creationTime;
     theme=other.theme;
-    text=other.theme;
+    text=other.text;
     email=other.email;
     customer_user_id=other.customer_user_id;
     customer_id=other.customer_user_id;
@@ -49,6 +34,7 @@ bool TICKET::operator==(const TICKET &o) const
 void TICKET::clear()
 {
     ID = 0;
+    injectID = 0;
     ticket_number = 0;
     isNew = false;
     QDateTime clearDT;
@@ -70,7 +56,6 @@ void TICKET::compare(TICKET other)
 
 void TICKET::sortMessages()
 {
-    message tmp;
     for(int i = 0; i < messages.size() - 1; ++i)
     {
         for(int j = 0; j < messages.size() - 1; ++j)

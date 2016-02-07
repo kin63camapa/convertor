@@ -3,13 +3,6 @@
 
 #include <QtCore>
 
-struct Userinfo
-{
-    bool isOk;
-    QString customer_user_id;
-    QString customer_id;
-};
-
 class TICKET : public QObject
 {
     Q_OBJECT
@@ -21,19 +14,21 @@ public:
     void clear();
     void compare(TICKET other);
     void sortMessages();
-    enum status
+    enum Status
     {
         Closed,
         Exist,
         New
-    };
-    struct message
+    } state;
+    struct Message
     {
         QDateTime time;//
         QString text;
     };
     int ID;//
+    int injectID;
     int ticket_number;//
+    int currenIndex;
     QDateTime creationTime;//
     QString theme;
     QString text;
@@ -41,15 +36,7 @@ public:
     QString customer_user_id;
     QString customer_id;
     bool isNew;//
-    QList<message> messages;
-
-signals:
-
-public slots:
-
-private:
-
+    QList<Message> messages;
 };
 
-extern QList<TICKET> list;
 #endif // TICKET_H

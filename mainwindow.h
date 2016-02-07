@@ -16,20 +16,34 @@ public slots:
     void connectBase();
     void doAllZBS();
     void pbarinc(int i);
-    int GetId(int i);
+    void newTicket(TICKET t);
+    void editTicket(TICKET t);
+    void nextBtnClicked();
+    void prewBtnClicked();
 private:
-    QSqlDatabase db;
+    QLayout *l;
+    QMenu *menu;
     QMenuBar *menubar;
     QStatusBar *statusbar;
     QProgressBar *pbar;
-    QLayout *l;
-    QMenu *menu;
     QAction *openBase;
     QAction *openMailFolder;
     QPushButton *btn;
     TicketPreview *tab;
+    int lastId;
+    int index;
     QStringList *unknowEmails;
     Parser *parser;
+    QSqlDatabase db;
+    QList<TICKET> list;
+    QDateTime periodStart;
+    QDateTime periodEnd;
+
+    int GetId(TICKET t);
+    TICKET getUserinfo(TICKET *t);
+    TICKET::Status getState(TICKET *t);
+    bool inject(TICKET t);
+
 };
 
 #endif // MAINWINDOW_H
