@@ -31,6 +31,8 @@ public:
     int injectID;
     int ticket_number;//
     int currenIndex;
+    int queue_id;
+    int user_id;
     QDateTime creationTime;//
     QString theme;
     QString text;

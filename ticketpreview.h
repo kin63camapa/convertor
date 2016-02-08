@@ -28,6 +28,7 @@ private slots:
 private:
     Ui::TicketPreview *ui;
     void readTicket(bool inj);
+    TICKET bkp;
 };
 
 #endif // TICKETPREVIEW_H

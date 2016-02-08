@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(tab,SIGNAL(inject(TICKET)),this,SLOT(injectTicket(TICKET)));
     statusbar = new QStatusBar(this);
     openMailFolder = new QAction(QString::fromUtf8("Открыть Почту"),this);
-    menubar = new QMenuBar(this);
+    menubar = new QMenuBar();
     menu = new QMenu(menubar);
     fmenu = new QMenu(menubar);
     openBase = new QAction(QString::fromUtf8("Открыть Базу"),this);
@@ -167,9 +167,9 @@ void MainWindow::fnd(FindDialog::FindType t, QString s)
         q.first();
         if(qLeight==1)
         {
-            if (q.value(0).toInt()==4)
+            if (q.value(0).toInt()==2||q.value(0).toInt()==3||q.value(0).toInt()==7)
             {
-                QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!\nПохоже эта заявка ЕСТЬ В БАЗЕ и ЗАКРЫТА!.")).exec();
+                QMessageBox(QMessageBox::Information,QString::fromUtf8("Ой"),QString::fromUtf8("Ничего не найдено!\nПохоже эта заявка ЕСТЬ В БАЗЕ и ЗАКРЫТА или объеденена!.")).exec();
                 return;
             }
         }
@@ -287,8 +287,8 @@ TICKET::Status MainWindow::getState(TICKET *t)
     q.first();
     if(qLeight==1)
     {
-        //есть ощущение, что при значении 4 - заявка закрыта.
-        if (q.value(0).toInt()==4) t->state = TICKET::Closed;
+
+        if (q.value(0).toInt()==2||q.value(0).toInt()==3||q.value(0).toInt()==7) t->state = TICKET::Closed;
         else t->state = TICKET::Exist;
     }
     else if (qLeight==0) t->state = TICKET::New;
@@ -433,5 +433,73 @@ void MainWindow::findTicket()
 
 bool MainWindow::inject(TICKET t)
 {
-    ;
+    if (t.ID <= 0 || t.ticket_number <= 0 || t.injectID <= 0) return false;
+    switch (t.state)
+    {
+    case TICKET::New:
+    {
+        QString ticketHeader = QString("INSERT INTO otrs.ticket (tn,title,queue_id,ticket_lock_id,type_id,user_id,responsible_user_id,ticket_priority_id,ticket_state_id,customer_id,customer_user_id,timeout,until_time,escalation_time,escalation_update_time,escalation_response_time,escalation_solution_time,valid_id,archive_flag,create_time_unix,create_time,create_by,change_time,change_by) ");
+        QString ticketValues = QString("VALUES (<{tn}>,<{title}>,<{queue_id}>,1,1,<{user_id}>,<{responsible_user_id}>,3,<{ticket_state_id}>,<{customer_id}>,<{customer_user_id}>,0,0,0,0,0,0,1,0,<{create_time_unix}>,<{create_time}>,4,<{change_time}>,4);");
+        ticketValues.replace("<{tn}>",QString::number(t.ticket_number));
+        ticketValues.replace("<{title}>","\""+t.theme+"\"");
+        if (t.queue_id < 3 || t.queue_id > 23) t.queue_id = 9;
+        ticketValues.replace("<{queue_id}>",QString::number(t.queue_id));
+        ticketValues.replace("<{user_id}>",QString::number(t.user_id));
+        ticketValues.replace("<{responsible_user_id}>",QString::number(t.user_id));
+        ticketValues.replace("<{ticket_state_id}>",QString::number(4));
+        if (!t.customer_id.size() || !t.customer_user_id.size())
+        {
+            t.customer_id = QString::fromUtf8("СмартТех");
+            t.customer_user_id = QString::fromUtf8("Кондраков Максим");
+        }
+        ticketValues.replace("<{customer_id}>","\""+t.customer_id+"\"");
+        ticketValues.replace("<{customer_user_id}>","\""+t.customer_user_id+"\"");
+        ticketValues.replace("<{create_time_unix}>",QString::number(t.creationTime.toTime_t()));
+        ticketValues.replace("<{create_time}>",t.creationTime.toString("\"yyyy-MM-dd hh:mm:ss\""));
+        if (t.messages.size())
+            ticketValues.replace("<{change_time}>",t.messages.at(t.messages.size()-1).time.toString("\"yyyy-MM-dd hh:mm:ss\""));
+        else ticketValues.replace("<{change_time}>",t.creationTime.toString("\"yyyy-MM-dd hh:mm:ss\""));
+        QSqlQuery ticketInj(ticketHeader+ticketValues,db);
+        if (ticketInj.lastError().type() != QSqlError::NoError)
+        {
+            qDebug() << ticketHeader+ticketValues << ticketInj.lastError().text();
+            log->textCursor().insertText(ticketInj.lastError().text()+"\n");
+            statusbar->showMessage(ticketInj.lastError().text());
+            return false;
+        }
+        int newId = GetId(t);
+        if (newId > 0) t.injectID = newId;
+    }
+    case TICKET::Exist:
+    {
+        QString articleHeader = QString("INSERT INTO otrs.article(ticket_id,article_type_id,article_sender_type_id,a_content_type,a_body,incoming_time,content_path,valid_id,create_time,create_by,change_time,change_by) ");
+        QString articleValues = QString("VALUES (<{ticket_id}>,9,1,\"text/plain; charset=utf-8\",<{a_body}>,<{incoming_time}>,<{content_path}>,1,<{create_time}>,4,<{change_time}>,4);");
+        articleValues.replace("<{ticket_id}>",QString::number(t.injectID));
+
+        QString body="\"";
+        foreach (TICKET::Message m , t.messages)
+        {
+            body+=m.time.toString("hh:mm:ss dd.MM.yyyy\n");
+            body+=(QString::fromUtf8(m.text.toAscii()));
+        }
+        body+="\"";
+        articleValues.replace("<{a_body}>",body);
+        articleValues.replace("<{incoming_time}>",QString::number(t.messages.at(0).time.toTime_t()));
+        articleValues.replace("<{content_path}>",t.messages.at(0).time.toString("\"yyyy/mm/dd\""));
+        articleValues.replace("<{create_time}>",t.messages.at(t.messages.size()-1).time.toString("\"yyyy-MM-dd hh:mm:ss\""));
+        articleValues.replace("<{change_time}>",t.messages.at(t.messages.size()-1).time.toString("\"yyyy-MM-dd hh:mm:ss\""));
+        QSqlQuery articleInj(articleHeader+articleValues,db);
+        if (articleInj.lastError().type() != QSqlError::NoError)
+        {
+            qDebug() << articleHeader+articleValues << articleInj.lastError().text();
+            log->textCursor().insertText(articleInj.lastError().text()+"\n");
+            statusbar->showMessage(articleInj.lastError().text());
+            return false;
+        }else return true;
+    }
+        break;
+    default:
+        break;
+    }
+    return false;
 }

@@ -35,6 +35,7 @@ void TicketPreview::showTicket(TICKET t,int size)
 
 void TicketPreview::showTicket(TICKET t)
 {
+    bkp=t;
     ui->POS->setValue(t.currenIndex);
     ui->customer_id->setText(t.customer_id);
     ui->injectID->setValue(t.injectID);
@@ -45,6 +46,23 @@ void TicketPreview::showTicket(TICKET t)
     ui->realID->setValue(t.ID);
     ui->theme->setText(t.theme);
     ui->body->clear();
+    switch (t.state) {
+    case TICKET::New:
+        ui->state->setText("TICKET::New");
+        break;
+    case TICKET::Exist:
+        ui->state->setText("TICKET::Exist");
+        break;
+    case TICKET::Closed:
+        ui->state->setText("TICKET::Closed");
+        break;
+    case TICKET::Unknown:
+        ui->state->setText("TICKET::Unknown");
+        break;
+    default:
+        ui->state->setText("TICKET::NotSet");
+        break;
+    }
     foreach (TICKET::Message m , t.messages)
     {
         ui->body->textCursor().insertText(m.time.toString("hh:mm:ss dd.MM.yyyy\n"));
@@ -54,7 +72,7 @@ void TicketPreview::showTicket(TICKET t)
 
 void TicketPreview::readTicket(bool inj)
 {
-    TICKET t;
+    TICKET t = bkp;
     t.currenIndex = ui->POS->value();
     t.customer_id = ui->customer_id->text();
     t.injectID = ui->injectID->value();

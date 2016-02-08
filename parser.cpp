@@ -135,12 +135,13 @@ void Parser::run()
                     tmp.replace("<snip>","");
                     tmp.replace("> ","\n");
                 }
-
+                tmp.replace("\"","\\");
+                tmp.replace("\`","\\`");
+                tmp.replace("\'","\\'");
                 tmp.replace(".Заметка:",".\nЗаметка: ");
                 tmp.replace("Назакрытие","На закрытие");
                 tmp.replace(QRegExp("Привет [\\S]*\\,")," ");
                 tmp.replace(QRegExp("Moved ticket in .*\\) "),"");
-
                 tmpTicket.text=tmp+"\n";
                 text=tmp.size();
                 //qDebug() << QString::fromUtf8(tmpTicket.text.toAscii());
