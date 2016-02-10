@@ -19,6 +19,7 @@ protected:
     void run();
 private:
     QFile *file;
+    long long int getNum(QString str);
 };
 
 #endif // Parser_H

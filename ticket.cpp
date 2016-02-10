@@ -57,6 +57,7 @@ void TICKET::compare(TICKET other)
     messages+=other.messages;
     other.messages=messages;
     if (other.isNew)this->operator =(other);
+    else if (!ID && other.ID) this->ID = other.ID;
 }
 
 void TICKET::sortMessages()

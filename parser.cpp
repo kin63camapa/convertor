@@ -43,17 +43,7 @@ void Parser::run()
                 if (time) time=!tmpTicket.creationTime.isNull();
             }
             //if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\] \\[\\d*\\]")))
-            if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\]")))
-            {//получаем номер
-                QString tmp1 = tmp;
-                num=tmpTicket.ticket_number=tmp.remove(QRegExp("Subject: \\[Ticket#")).remove(6,12).toInt();//индус думает что длинна номера всегда 6 символов
-                if (!tmpTicket.ticket_number)
-                {
-                    tmp1 = tmp1.remove(QRegExp("Subject: \\[Ticket#"));
-                    tmp1 = tmp1.remove(6,tmp1.size()-6);
-                    num=tmpTicket.ticket_number=tmp1.toInt();
-                }
-            }
+            if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\]"))) num=tmpTicket.ticket_number=getNum(tmp);
             if (!text && tmp.contains(QRegExp("Content-Type: text/plain; charset\"utf-8\"")))
             {
                 QStringList bufftx;
@@ -93,21 +83,38 @@ void Parser::run()
                         tmpTicket.email=str.remove(QRegExp("([А-я].*\\x00A0(?=[A-z0-9]))"));
                         // Должен удалять Non-breaking space(или U+00A0)
                         tmp.clear();
-
+                    }
+                    if (!num&&tmp.contains(QRegExp("^Subject: \\[Ticket#\\d*\\]")))
+                    {
+                        num=tmpTicket.ticket_number=getNum(tmp);
+                        tmp.clear();
                     }
                     bufftx.append(tmp);
                 }
                 while(!bufftx.at(bufftx.size()-1).contains("http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;Ticket"));
-                tmp = file->readLine();
+                tmp += file->readLine();
                 emit progress(file->bytesAvailable());
-                tmp.resize(tmp.size()-2);
-                id=tmpTicket.ID=tmp.remove(0,3).toInt();
+                tmp.remove(QRegExp("[\\n\\t\\r]"));
+                tmp.remove(QRegExp("\\[\\d\\]"));
+                tmp.replace(QRegExp("\\s"),"");
+                tmp.remove("http://otrs.smart-tech.biz/otrs/index.pl?Action=AgentTicketZoom;TicketID=");
+                id=tmpTicket.ID=tmp.toInt();
                 tmp.clear();
                 bool rmSpaces=true;
                 foreach (QString tmptx, bufftx)
                 {
                     while(pause)this->msleep(1);
                     if (
+                            tmptx.contains("Organization: SmartTech")||
+                            tmptx.contains(QRegExp("To: .*@smart-tech.biz"))||
+                            tmptx.contains("Message-ID: <")||
+                            tmptx.contains("Auto-Submitted:")||
+                            tmptx.contains("X-Loop:")||
+                            tmptx.contains("Precedence:")||
+                            tmptx.contains("Date:")||
+                            tmptx.contains("MIME-Version: 1.0")||
+                            tmptx.contains("X-Powered-BY:")||
+                            tmptx.contains("X-Mailer:")||
                             tmptx.contains("Content-Disposition:")||
                             tmptx.contains("Content-Transfer-Encoding:")||
                             tmptx.contains("[1]http://otrs.smart-tech.biz")||
@@ -166,4 +173,12 @@ void Parser::run()
         plainIsPresent=false;
     }
     //закончили парсить файл
+}
+
+long long Parser::getNum(QString str)
+{
+    str.remove(QRegExp(" \\[\\d*\\].*"));
+    str.remove("Subject: [Ticket#");
+    str.remove(QRegExp("\\].*"));
+    return str.toDouble();
 }

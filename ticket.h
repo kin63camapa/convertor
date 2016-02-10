@@ -29,7 +29,7 @@ public:
     };
     int ID;//
     int injectID;
-    int ticket_number;//
+    long long int ticket_number;//
     int currenIndex;
     int queue_id;
     int user_id;

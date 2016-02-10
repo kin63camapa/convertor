@@ -8,8 +8,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     qRegisterMetaType<TICKET>("TICKET");
     qRegisterMetaType<FindDialog::FindType>("FindDialog::FindType");
-    periodStart = QDateTime::fromString("00:00:00 01.01.2000","hh:mm:ss dd.MM.yyyy");
-    periodEnd = QDateTime::fromString("00:00:00 01.01.2100","hh:mm:ss dd.MM.yyyy");
+    periodStart = QDateTime::fromString("00:00:00 2015.04.28","hh:mm:ss dd.MM.yyyy");
+    periodEnd = QDateTime::fromString("00:00:00 10.01.2016","hh:mm:ss dd.MM.yyyy");
     lastId = -1;
     index = 0;
     lastFindQEry.clear();
@@ -381,7 +381,8 @@ void MainWindow::doAllZBS()
         fdialog->hide();
         foreach (TICKET t, list)
         {
-            inject(t);
+            if (inject(t)) log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записан в базу успешно.\n").arg(t.ticket_number));
+            else log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записать в базу Не удалось.\n%2").arg(t.ticket_number).arg(db.lastError().text()));
         }
         break;
     case QMessageBox::Discard:
@@ -422,7 +423,8 @@ void MainWindow::injectTicket(TICKET t)
                     QString::fromUtf8("СТОЯТЬ!!!"),
                     QString::fromUtf8("Вы собираетесь записать тикет в базу!\nОтменить это действие невозможно!\nПродолжать?"),
                     QMessageBox::Yes|QMessageBox::No).exec() != QMessageBox::Yes) return;
-    inject(t);
+    if (inject(t)) log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записан в базу успешно.\n").arg(t.ticket_number));
+    else log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записаnm в базу Не удалось.\n%2").arg(t.ticket_number).arg(db.lastError().text()));
 }
 
 void MainWindow::findTicket()
