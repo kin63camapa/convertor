@@ -12,6 +12,8 @@ class MainWindow : public QDialog
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = 0);
+protected:
+    void closeEvent(QCloseEvent *e);
 public slots:
     void openMail();
     void connectBase();

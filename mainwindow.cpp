@@ -65,6 +65,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
 }
 
+void MainWindow::closeEvent(QCloseEvent *e)
+{
+    if (QMessageBox(QMessageBox::Warning,
+                    QString::fromUtf8("СТОЯТЬ!!!"),
+                    QString::fromUtf8("Выйти?"),
+                    QMessageBox::Yes|QMessageBox::No).exec() == QMessageBox::Yes) e->accept();
+    else e->ignore();
+}
+
 void MainWindow::openMail()
 {
     if (!db.isOpen())
@@ -299,7 +308,6 @@ TICKET::Status MainWindow::getState(TICKET *t)
 
 void MainWindow::newTicket(TICKET t)
 {
-    if ((t.creationTime < periodStart && !t.isNew) || t.creationTime > periodEnd) return;
     parser->pause = true;
     TICKET::Message m;
     m.time=t.creationTime;
@@ -424,7 +432,7 @@ void MainWindow::injectTicket(TICKET t)
                     QString::fromUtf8("Вы собираетесь записать тикет в базу!\nОтменить это действие невозможно!\nПродолжать?"),
                     QMessageBox::Yes|QMessageBox::No).exec() != QMessageBox::Yes) return;
     if (inject(t)) log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записан в базу успешно.\n").arg(t.ticket_number));
-    else log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записаnm в базу Не удалось.\n%2").arg(t.ticket_number).arg(db.lastError().text()));
+    else log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записать в базу Не удалось.\n%2").arg(t.ticket_number).arg(db.lastError().text()));
 }
 
 void MainWindow::findTicket()
@@ -436,6 +444,19 @@ void MainWindow::findTicket()
 bool MainWindow::inject(TICKET t)
 {
     if (t.ID <= 0 || t.ticket_number <= 0 || t.injectID <= 0) return false;
+    if (t.creationTime > periodEnd)
+    {
+        log->textCursor().insertText(QString::fromUtf8("Тикет №%1 не записан в базу.\nДата создания %2 позднее %3\n").arg(t.ticket_number).arg(t.creationTime.toString()).arg(periodEnd.toString()));
+        return false;
+    }
+    /*if (t.creationTime < periodStart)
+    {
+         foreach (TICKET::Message m, t.messages) {
+            if (m.time)
+        }
+        log->textCursor().insertText(QString::fromUtf8("Тикет №%1 записаnm в базу.Дата создания %2 ранее %3").arg(t.ticket_number).arg(t.creationTime).arg(periodStart));
+        return;
+    }*/
     switch (t.state)
     {
     case TICKET::New:
@@ -444,7 +465,7 @@ bool MainWindow::inject(TICKET t)
         QString ticketValues = QString("VALUES (<{tn}>,<{title}>,<{queue_id}>,1,1,<{user_id}>,<{responsible_user_id}>,3,<{ticket_state_id}>,<{customer_id}>,<{customer_user_id}>,0,0,0,0,0,0,1,0,<{create_time_unix}>,<{create_time}>,4,<{change_time}>,4);");
         ticketValues.replace("<{tn}>",QString::number(t.ticket_number));
         ticketValues.replace("<{title}>","\""+t.theme+"\"");
-        if (t.queue_id < 3 || t.queue_id > 23) t.queue_id = 9;
+       /* if (t.queue_id < 3 || t.queue_id > 23)*/ t.queue_id = 9;
         ticketValues.replace("<{queue_id}>",QString::number(t.queue_id));
         ticketValues.replace("<{user_id}>",QString::number(t.user_id));
         ticketValues.replace("<{responsible_user_id}>",QString::number(t.user_id));
@@ -477,14 +498,23 @@ bool MainWindow::inject(TICKET t)
         QString articleHeader = QString("INSERT INTO otrs.article(ticket_id,article_type_id,article_sender_type_id,a_content_type,a_body,incoming_time,content_path,valid_id,create_time,create_by,change_time,change_by) ");
         QString articleValues = QString("VALUES (<{ticket_id}>,9,1,\"text/plain; charset=utf-8\",<{a_body}>,<{incoming_time}>,<{content_path}>,1,<{create_time}>,4,<{change_time}>,4);");
         articleValues.replace("<{ticket_id}>",QString::number(t.injectID));
-
+        bool msg_exist = false;
         QString body="\"";
         foreach (TICKET::Message m , t.messages)
         {
-            body+=m.time.toString("hh:mm:ss dd.MM.yyyy\n");
-            body+=(QString::fromUtf8(m.text.toAscii()));
+            if (m.time<periodEnd && m.time>periodStart)
+            {
+                msg_exist=true;
+                body+=m.time.toString("hh:mm:ss dd.MM.yyyy\n");
+                body+=(QString::fromUtf8(m.text.toAscii()));
+            }
         }
         body+="\"";
+        if (!msg_exist)
+        {
+            log->textCursor().insertText(QString::fromUtf8("Тикет №%1 не добавлен.\nНет изменений в обозначенный период\n").arg(t.ticket_number));
+            return false;
+        }
         articleValues.replace("<{a_body}>",body);
         articleValues.replace("<{incoming_time}>",QString::number(t.messages.at(0).time.toTime_t()));
         articleValues.replace("<{content_path}>",t.messages.at(0).time.toString("\"yyyy/mm/dd\""));
