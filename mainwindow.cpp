@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     qRegisterMetaType<TICKET>("TICKET");
     qRegisterMetaType<FindDialog::FindType>("FindDialog::FindType");
-    periodStart = QDateTime::fromString("00:00:00 2015.04.28","hh:mm:ss dd.MM.yyyy");
+    periodStart = QDateTime::fromString("00:00:00 28.04.2015","hh:mm:ss dd.MM.yyyy");
     periodEnd = QDateTime::fromString("00:00:00 10.01.2016","hh:mm:ss dd.MM.yyyy");
     lastId = -1;
     index = 0;
@@ -70,7 +70,11 @@ void MainWindow::closeEvent(QCloseEvent *e)
     if (QMessageBox(QMessageBox::Warning,
                     QString::fromUtf8("СТОЯТЬ!!!"),
                     QString::fromUtf8("Выйти?"),
-                    QMessageBox::Yes|QMessageBox::No).exec() == QMessageBox::Yes) e->accept();
+                    QMessageBox::Yes|QMessageBox::No).exec() == QMessageBox::Yes)
+    {
+        db.close();
+        e->accept();
+    }
     else e->ignore();
 }
 
@@ -465,7 +469,7 @@ bool MainWindow::inject(TICKET t)
         QString ticketValues = QString("VALUES (<{tn}>,<{title}>,<{queue_id}>,1,1,<{user_id}>,<{responsible_user_id}>,3,<{ticket_state_id}>,<{customer_id}>,<{customer_user_id}>,0,0,0,0,0,0,1,0,<{create_time_unix}>,<{create_time}>,4,<{change_time}>,4);");
         ticketValues.replace("<{tn}>",QString::number(t.ticket_number));
         ticketValues.replace("<{title}>","\""+t.theme+"\"");
-       /* if (t.queue_id < 3 || t.queue_id > 23)*/ t.queue_id = 9;
+       /* if (t.queue_id < 3 || t.queue_id > 23)*/ t.queue_id = 14;
         ticketValues.replace("<{queue_id}>",QString::number(t.queue_id));
         ticketValues.replace("<{user_id}>",QString::number(t.user_id));
         ticketValues.replace("<{responsible_user_id}>",QString::number(t.user_id));
@@ -502,8 +506,9 @@ bool MainWindow::inject(TICKET t)
         QString body="\"";
         foreach (TICKET::Message m , t.messages)
         {
-            if (m.time<periodEnd && m.time>periodStart)
+            if ((m.time>periodStart) && (m.time<periodEnd))
             {
+                qDebug() << m.time.toString("hh:mm:ss dd.MM.yyyy") << ">" << periodStart.toString("hh:mm:ss dd.MM.yyyy") << "&& " << m.time.toString("hh:mm:ss dd.MM.yyyy") << "<" << periodEnd.toString("hh:mm:ss dd.MM.yyyy");
                 msg_exist=true;
                 body+=m.time.toString("hh:mm:ss dd.MM.yyyy\n");
                 body+=(QString::fromUtf8(m.text.toAscii()));
